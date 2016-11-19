@@ -57,21 +57,21 @@ Os nos podem ser nomes
 int
   num_elementos, /* Elementos */
   num_variaveis, /* Variaveis */
-  num_nos, /* Nos */
-  i,j,k;
+  num_nos; /* Nos */
+  //i,j,k;
 
 
 
 /* Foram colocados limites nos formatos de leitura para alguma protecao
    contra excesso de caracteres nestas variaveis */
 
-double
-  g,
-  Yn[MAX_NOS+1][MAX_NOS+2];
+//double g;
+  //g,
+  //Yn[MAX_NOS+1][MAX_NOS+2];
 
 /* Resolucao de sistema de equacoes lineares.
    Metodo de Gauss-Jordan com condensacao pivotal */
-int resolversistema(void)
+int resolversistema(std::vector< std::vector<double>>& Yn)
 {
   int i,j,l, a;
   double t, p;
@@ -110,7 +110,7 @@ int resolversistema(void)
 }
 
 /* Rotina que conta os nos e atribui numeros a eles */
-int numero(std::vector<std::string>& lista, char *nome)
+int numero(std::vector<std::string>& lista, std::string nome)
 {
  /* int i,achou;
 
@@ -129,7 +129,7 @@ int numero(std::vector<std::string>& lista, char *nome)
   else {
     return i; / no ja conhecido /
   }*/
-	auto i = std::find(lista.begin(), lista.end(), std::string(nome));
+	auto i = std::find(lista.begin(), lista.end(), nome);
 	if (i != lista.end()){
 		return i - lista.begin();
 	}
@@ -143,8 +143,8 @@ void leituraNetlist(std::vector<std::string>& lista, std::vector<Elemento>& netl
 
 	FILE *arquivo = NULL;
   char nomearquivo[MAX_LINHA+1],
-			 tipo,
-			 na[MAX_NOME],nb[MAX_NOME],nc[MAX_NOME],nd[MAX_NOME];
+			 tipo;
+	string na,nb,nc,nd;
 
 	if (argc == 2){
 		strcpy(nomearquivo, argv[1]);
@@ -220,79 +220,77 @@ void leituraNetlist(std::vector<std::string>& lista, std::vector<Elemento>& netl
   }
 }
 
-int main(int argc, char** argv)
-{
-	using namespace std;
-
-	vector<string> lista; 
-	vector<Elemento> netlist(1);
+void adicionarVariaveis(std::vector<std::string>& lista, std::vector<Elemento>& netlist){
+	int i;
 	char tipo;
-  
-	cout << "Programa demonstrativo de analise nodal modificada" << endl;
-  cout << "Por:\n Antonio Carlos M. de Queiroz - acmq@coe.ufrj.br\nCamyla Tsukuda Romao - \nPaulo Oliveira Lenzi Valente - paulovalente@poli.ufrj.br" << endl;
-  cout << "Versao " << versao << endl;
-  /* Leitura do netlist */
-	leituraNetlist(lista, netlist, argc, argv);
 
-  /* Acrescenta variaveis de corrente acima dos nos, anotando no netlist */
   num_nos=num_variaveis;
   for (i=1; i<=num_elementos; i++) {
     tipo=netlist[i].nome[0];
     if (tipo=='V' || tipo=='E' || tipo=='F' || tipo=='O') {
       num_variaveis++;
-      if (num_variaveis>MAX_NOS) {
+      /*if (num_variaveis>MAX_NOS) {
         cout << "As correntes extra excederam o numero de variaveis permitido (" << MAX_NOS << ")" << endl;
         exit(ERRO_NUM_VARIAVEIS);
-      }
+      }*/
       lista.push_back("j"+netlist[i].nome);
       netlist[i].x=num_variaveis;
     }
     else if (tipo=='H') {
       num_variaveis+=2;
-      if (num_variaveis>MAX_NOS) {
-        cout << "As correntes extra excederam o numero de variaveis permitido (" << MAX_NOS << ")" << endl;
+      /*if (num_variaveis>MAX_NOS) {
+				std::cout << "As correntes extra excederam o numero de variaveis permitido (" << MAX_NOS << ")" << std::endl;
         exit(ERRO_NUM_VARIAVEIS);
-      }
+      }*/
       lista.push_back("jx"+netlist[i].nome);
       netlist[i].x=num_variaveis-1;
       lista.push_back("jy"+netlist[i].nome);
       netlist[i].y=num_variaveis;
     }
   }
-	
-	cin.get();
-  /* Lista tudo */
-  cout << "Variaveis internas:  " << endl;
-  for (i=0; i<=num_variaveis; i++)
-		cout << i << " -> " << lista[i] << endl;
-	cin.get();
-  cout << "Netlist interno final" << endl;
-  for (i=1; i<=num_elementos; i++) {
-    tipo=netlist[i].nome[0];
-    if (tipo=='R' || tipo=='I' || tipo=='V') {
-			cout << netlist[i].nome << " " << netlist[i].a << " " << netlist[i].b << " " << netlist[i].valor << endl;
-    }
-    else if (tipo=='G' || tipo=='E' || tipo=='F' || tipo=='H') {
-			cout << netlist[i].nome << " " << netlist[i].a << " " << netlist[i].b << " " << netlist[i].c << " " << netlist[i].d << " " << netlist[i].valor << endl;
-    }
-    else if (tipo=='O') {
-			cout << netlist[i].nome << " " << netlist[i].a << " " << netlist[i].b << " " << netlist[i].c << " " << netlist[i].d << endl;
-    }
-    if (tipo=='V' || tipo=='E' || tipo=='F' || tipo=='O')
-      cout << "Corrente jx: " << netlist[i].x << endl;
-    else if (tipo=='H')
-      cout << "Correntes jx e jy: " << netlist[i].x << " " << netlist[i].y << endl;
-  }
-	cin.get();
-  /* Monta o sistema nodal modificado */
-  cout << "O circuito tem " << num_nos << " nos, " << num_variaveis << " variaveis e " << num_elementos << " elementos" << endl;
+}
 
-	cin.get();
-  /* Zera sistema */
-  for (i=0; i<=num_variaveis; i++) {
+void listarVariaveis(std::vector<std::string> lista){
+	std::cout << "Variaveis internas:  " << std::endl;
+  for (int i=0; i<=num_variaveis; i++)
+		std::cout << i << " -> " << lista[i] << std::endl;
+}
+
+void mostrarNetlist(std::vector<Elemento> netlist){
+	using namespace std;
+	char tipo;
+	int i;
+
+	cout << "Netlist interno final" << endl;
+		for (i=1; i<=num_elementos; i++) {
+			tipo=netlist[i].nome[0];
+			if (tipo=='R' || tipo=='I' || tipo=='V') {
+				cout << netlist[i].nome << " " << netlist[i].a << " " << netlist[i].b << " " << netlist[i].valor << endl;
+			}
+			else if (tipo=='G' || tipo=='E' || tipo=='F' || tipo=='H') {
+				cout << netlist[i].nome << " " << netlist[i].a << " " << netlist[i].b << " " << netlist[i].c << " " << netlist[i].d << " " << netlist[i].valor << endl;
+			}
+			else if (tipo=='O') {
+				cout << netlist[i].nome << " " << netlist[i].a << " " << netlist[i].b << " " << netlist[i].c << " " << netlist[i].d << endl;
+			}
+			if (tipo=='V' || tipo=='E' || tipo=='F' || tipo=='O')
+				cout << "Corrente jx: " << netlist[i].x << endl;
+			else if (tipo=='H')
+				cout << "Correntes jx e jy: " << netlist[i].x << " " << netlist[i].y << endl;
+		}
+}
+
+void montarSistema(std::vector<Elemento>& netlist, std::vector< std::vector<double>>& Yn){
+	int i, j;
+	double g;
+	char tipo;
+	
+
+	for (i=0; i<=num_variaveis; i++) {
     for (j=0; j<=num_variaveis+1; j++)
       Yn[i][j]=0;
   }
+
   /* Monta estampas */
   for (i=1; i<=num_elementos; i++) {
     tipo=netlist[i].nome[0];
@@ -358,28 +356,64 @@ int main(int argc, char** argv)
       Yn[netlist[i].x][netlist[i].c]+=1;
       Yn[netlist[i].x][netlist[i].d]-=1;
     }
-#ifdef DEBUG
-    /* Opcional: Mostra o sistema apos a montagem da estampa */
-    cout <<  "Sistema apos a estampa de " << netlist[i].nome << endl;
-    for (k=1; k<=num_variaveis; k++) {
+	
+	#ifdef DEBUG
+	/* Opcional: Mostra o sistema apos a montagem da estampa */
+		std::cout <<  "Sistema apos a estampa de " << netlist[i].nome << std::endl;
+    for (int k=1; k<=num_variaveis; k++) {
       for (j=1; j<=num_variaveis+1; j++)
         if (Yn[k][j]!=0) printf("%+3.1f ",Yn[k][j]);
-        else printf(" ... ");
-      cout << endl;
+        else std::cout << " ... ";
+			std::cout << std::endl;
     }
-		cin.get();
-#endif
+		std::cin.get();
+	#endif
   }
+}
+
+int main(int argc, char** argv)
+{
+	using namespace std;
+
+	vector<string> lista; 
+	vector<Elemento> netlist(1);
+  //Yn[MAX_NOS+1][MAX_NOS+2];
+  
+	cout << "Programa demonstrativo de analise nodal modificada" << endl;
+  cout << "Por:\n Antonio Carlos M. de Queiroz - acmq@coe.ufrj.br\nCamyla Tsukuda Romao - \nPaulo Oliveira Lenzi Valente - paulovalente@poli.ufrj.br" << endl;
+  cout << "Versao " << versao << endl;
+  /* Leitura do netlist */
+	leituraNetlist(lista, netlist, argc, argv);
+
+  /* Acrescenta variaveis de corrente acima dos nos, anotando no netlist */
+	adicionarVariaveis(lista, netlist);
+	cin.get();
+
+  /* Lista tudo */
+	listarVariaveis(lista);
+	cin.get();
+
+	mostrarNetlist(netlist);
+	cin.get();
+  
+	/* Monta o sistema nodal modificado */
+  cout << "O circuito tem " << num_nos << " nos, " << num_variaveis << " variaveis e " << num_elementos << " elementos" << endl;
+	cin.get();
+	
+	vector<vector<double>> Yn(num_variaveis+1, vector<double>(num_variaveis+2));
+	montarSistema(netlist, Yn);
+	cin.get();
+
   /* Resolve o sistema */
-  if (resolversistema()) {
+  if (resolversistema(Yn)) {
 		cin.get();
     exit(ERRO_RESOLUCAO_SISTEMA);
   }
 #ifdef DEBUG
   /* Opcional: Mostra o sistema resolvido */
   cout << "Sistema resolvido:" << endl;
-  for (i=1; i<=num_variaveis; i++) {
-      for (j=1; j<=num_variaveis+1; j++)
+  for (int i=1; i<=num_variaveis; i++) {
+      for (int j=1; j<=num_variaveis+1; j++)
         if (Yn[i][j]!=0) printf("%+3.1f ",Yn[i][j]);
         else printf(" ... ");
       cout << endl;
@@ -389,7 +423,7 @@ int main(int argc, char** argv)
   /* Mostra solucao */
   cout << "Solucao:" << endl;
 	string txt = "Tensao";
-  for (i=1; i<=num_variaveis; i++) {
+  for (int i=1; i<=num_variaveis; i++) {
     if (i==num_nos+1) txt = "Corrente";
     cout << txt << " " << lista[i] << ": " << Yn[i][num_variaveis+1] << endl;
   }
