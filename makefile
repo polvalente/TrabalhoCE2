@@ -3,9 +3,11 @@ CPP_LD=g++
 CPP_FLAGS=-std=c++0x -Wall -Werror
 CPP_LD_FLAGS=-std=c++0x -o
 
-SRCS=simuladorCircuitos.cpp
+SRCS=main.cpp\
+     functions.cpp\
+     classes.cpp
 
-OBJS=${SRCS:cpp=o}
+OBJS=${SRCS:.cpp=.o}
 
 %.o: %.cpp
 	${CPP_C} ${CPP_FLAGS} -c $<
