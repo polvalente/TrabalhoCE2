@@ -12,7 +12,6 @@ OBJS=${SRCS:.cpp=.o}
 %.o: %.cpp
 	${CPP_C} ${CPP_FLAGS} -c $<
 debug: 
-	make clean
 	${CPP_C} ${CPP_FLAGS} -DDEBUG -c main.cpp
 	${CPP_C} ${CPP_FLAGS} -DDEBUG -c functions.cpp
 	make build
