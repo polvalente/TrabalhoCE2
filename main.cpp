@@ -55,7 +55,7 @@ int main(int argc, char** argv)
   cout << "O circuito tem " << num_nos << " nos, " << num_variaveis << " variaveis e " << num_elementos << " elementos" << endl;
 	cin.get();
 	
-	vector<vector<double>> Yn(num_variaveis+1, vector<double>(num_variaveis+2));
+	vector<vector<long double>> Yn(num_variaveis+1, vector<long double>(num_variaveis+2));
 	montarSistema(netlist, Yn, num_variaveis, num_elementos);
 	cin.get();
 

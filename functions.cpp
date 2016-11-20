@@ -5,10 +5,7 @@
 #include <fstream>
 #include <algorithm>
 
-#include <cstdio>
-#include <cstring>
-#include <cstdlib>
-#include <cmath>
+//#include <cmath>
 
 #include "classes.hpp"
 #include "functions.hpp"
@@ -21,9 +18,9 @@
 
 /* Resolucao de sistema de equacoes lineares.
    Metodo de Gauss-Jordan com condensacao pivotal */
-int resolverSistema(std::vector< std::vector<double>>& Yn, int& num_variaveis){
+int resolverSistema(std::vector< std::vector<long double>>& Yn, int& num_variaveis){
   int i,j,l, a;
-  double t, p;
+  long double t, p;
 
   for (i=1; i<=num_variaveis; i++) {
     t=0.0;
@@ -74,19 +71,19 @@ void leituraNetlist(std::vector<std::string>& lista, std::vector<Elemento>& netl
 	using namespace std;
 
 	FILE *arquivo = NULL;
-  char nomearquivo[MAX_LINHA+1],
-			 tipo;
+  string nomearquivo;
+	char tipo;
 	string na,nb,nc,nd;
 
 	if (argc == 2){
-		strcpy(nomearquivo, argv[1]);
-		arquivo = fopen(nomearquivo, "r");
+		nomearquivo = argv[1];
+		arquivo = fopen(nomearquivo.c_str(), "r");
 	}
 
 	while(!arquivo){
 		cout << "Nome do arquivo com o netlist (ex: mna.net): ";
 		cin >> nomearquivo;
-		arquivo=fopen(nomearquivo,"r");
+		arquivo=fopen(nomearquivo.c_str(),"r");
 			if (!arquivo) {
 				cout << "Arquivo " << nomearquivo << " inexistente" << endl;
 			}
@@ -212,9 +209,9 @@ void mostrarNetlist(std::vector<Elemento> netlist, int num_elementos){
 		}
 }
 
-void montarSistema(std::vector<Elemento>& netlist, std::vector< std::vector<double>>& Yn, int num_variaveis, int num_elementos){
+void montarSistema(std::vector<Elemento>& netlist, std::vector< std::vector<long double>>& Yn, int num_variaveis, int num_elementos){
 	int i, j;
-	double g;
+	long double g;
 	char tipo;
 	
 
@@ -299,13 +296,14 @@ void montarSistema(std::vector<Elemento>& netlist, std::vector< std::vector<doub
   }
 }
 
-void mostrarSistema(std::string msg, std::vector<std::vector<double>> Yn, int num_variaveis){
+void mostrarSistema(std::string msg, std::vector<std::vector<long double>> Yn, int num_variaveis){
   /* Opcional: Mostra o sistema resolvido */
 	std::cout << msg << std::endl;
+
   for (int i=1; i<=num_variaveis; i++) {
       for (int j=1; j<=num_variaveis+1; j++)
         if ( (Yn[i][j]!=0) || (j == num_variaveis+1)) 
-					printf("%+3.1f ",Yn[i][j]);
+					printf("%+3.1Lf ",Yn[i][j]);
         else printf(" ... ");
 			std::cout << std::endl;
     }

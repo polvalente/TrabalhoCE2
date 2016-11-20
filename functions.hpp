@@ -23,13 +23,13 @@
 #include "classes.hpp"
 
 //Cabecalhos de funcoes
-int resolverSistema(std::vector< std::vector<double>>&, int&);
+int resolverSistema(std::vector< std::vector<long double>>&, int&);
 int numero(std::vector<std::string>&, std::string, int&);
 void leituraNetlist(std::vector<std::string>&, std::vector<Elemento>&, int, char**, int&, int&);
 void adicionarVariaveis(std::vector<std::string>&, std::vector<Elemento>&, int&, int&, int&);
 void listarVariaveis(std::vector<std::string>, int);
 void mostrarNetlist(std::vector<Elemento>, int);
-void montarSistema(std::vector<Elemento>&, std::vector< std::vector<double>>&, int, int);
-void mostrarSistema(std::string, std::vector<std::vector<double>>, int);
+void montarSistema(std::vector<Elemento>&, std::vector< std::vector<long double>>&, int, int);
+void mostrarSistema(std::string, std::vector<std::vector<long double>>, int);
 
 #endif
