@@ -1,0 +1,312 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <sstream>
+#include <fstream>
+#include <algorithm>
+
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
+#include <cmath>
+
+#include "classes.hpp"
+#include "functions.hpp"
+#include "constants.hpp"
+
+//int
+//  num_elementos, /* Elementos */
+//  num_variaveis, /* Variaveis */
+//  num_nos; /* Nos */
+
+/* Resolucao de sistema de equacoes lineares.
+   Metodo de Gauss-Jordan com condensacao pivotal */
+int resolverSistema(std::vector< std::vector<double>>& Yn, int& num_variaveis){
+  int i,j,l, a;
+  double t, p;
+
+  for (i=1; i<=num_variaveis; i++) {
+    t=0.0;
+    a=i;
+    for (l=i; l<=num_variaveis; l++) {
+      if (fabs(Yn[l][i])>fabs(t)) {
+				a=l;
+				t=Yn[l][i];
+      }
+    }
+    if (i!=a) {
+      for (l=1; l<=num_variaveis+1; l++) {
+				p=Yn[i][l];
+				Yn[i][l]=Yn[a][l];
+				Yn[a][l]=p;
+      }
+    }
+    if (fabs(t)<TOLG) {
+			std::cout << "Sistema singular" << std::endl;
+      return ERRO_RESOLUCAO_SISTEMA;
+    }
+    for (j=num_variaveis+1; j>0; j--) {  /* Basta j>i em vez de j>0 */
+      Yn[i][j]/= t;
+      p=Yn[i][j];
+      if (p!=0)  /* Evita operacoes com zero */
+        for (l=1; l<=num_variaveis; l++) {  
+	  if (l!=i)
+	    Yn[l][j]-=Yn[l][i]*p;
+        }
+    }
+  }
+  return OK;
+}
+
+/* Rotina que conta os nos e atribui numeros a eles */
+int numero(std::vector<std::string>& lista, std::string nome, int& num_variaveis)
+{
+	auto i = std::find(lista.begin(), lista.end(), nome);
+	if (i != lista.end()){
+		return i - lista.begin();
+	}
+	
+	lista.push_back(nome);
+	num_variaveis++;
+	return num_variaveis;	
+}
+void leituraNetlist(std::vector<std::string>& lista, std::vector<Elemento>& netlist, int argc, char **argv, int& num_elementos, int& num_variaveis){
+	using namespace std;
+
+	FILE *arquivo = NULL;
+  char nomearquivo[MAX_LINHA+1],
+			 tipo;
+	string na,nb,nc,nd;
+
+	if (argc == 2){
+		strcpy(nomearquivo, argv[1]);
+		arquivo = fopen(nomearquivo, "r");
+	}
+
+	while(!arquivo){
+		cout << "Nome do arquivo com o netlist (ex: mna.net): ";
+		cin >> nomearquivo;
+		arquivo=fopen(nomearquivo,"r");
+			if (!arquivo) {
+				cout << "Arquivo " << nomearquivo << " inexistente" << endl;
+			}
+	}
+	fclose(arquivo);
+  cout << "Lendo netlist" << endl;
+	
+	ifstream input_file(nomearquivo);
+	num_elementos=0;
+	num_variaveis=0;
+	lista.push_back("0");
+  
+	string linha;
+	getline(input_file, linha);
+	cout << "Titulo: " << linha << endl;
+	
+	Elemento elemento;
+	while (getline(input_file, linha)) {
+    num_elementos++; /* Nao usa o netlist[0] */
+		netlist.push_back(elemento);
+
+    /*if (num_elementos>MAX_ELEM) {
+      cout << "O programa so aceita ate " << MAX_ELEM << " elementos" << endl;
+      exit(ERRO_NUM_ELEMENTOS);
+    }*/
+
+    linha[0]=toupper(linha[0]);
+    tipo=linha[0];
+
+		istringstream input(linha);
+
+    if (tipo=='R' || tipo=='I' || tipo=='V') {
+			input >> netlist[num_elementos].nome >> na >> nb >> netlist[num_elementos].valor;
+      cout << netlist[num_elementos].nome << " " << na << " " <<  nb << " " << netlist[num_elementos].valor << endl;
+      netlist[num_elementos].a=numero(lista, na, num_variaveis);
+      netlist[num_elementos].b=numero(lista, nb, num_variaveis);
+    }
+    else if (tipo=='G' || tipo=='E' || tipo=='F' || tipo=='H') {
+			input >> netlist[num_elementos].nome >> na >> nb >> nc >> nd >> netlist[num_elementos].valor;
+      cout << netlist[num_elementos].nome << " " << na << " " <<  nb << " " << nc << " " << nd << " " << netlist[num_elementos].valor << endl;
+      netlist[num_elementos].a=numero(lista, na, num_variaveis);
+      netlist[num_elementos].b=numero(lista, nb, num_variaveis);
+      netlist[num_elementos].c=numero(lista, nc, num_variaveis);
+      netlist[num_elementos].d=numero(lista, nd, num_variaveis);
+    }
+    else if (tipo=='O') {
+			input >> netlist[num_elementos].nome >> na >> nb >> nc >> nd;
+      cout << netlist[num_elementos].nome << " " << na << " " <<  nb << " " << nc << " " << nd << endl;
+      netlist[num_elementos].a=numero(lista, na, num_variaveis);
+      netlist[num_elementos].b=numero(lista, nb, num_variaveis);
+      netlist[num_elementos].c=numero(lista, nc, num_variaveis);
+      netlist[num_elementos].d=numero(lista, nd, num_variaveis);
+    }
+    else if (tipo=='*') { /* Comentario comeca com "*" */
+      cout << "Comentario: " << linha << endl;
+      num_elementos--;
+    }
+    else {
+      cout << "Elemento desconhecido: " << linha << endl;
+      cin.get();
+      exit(ERRO_ELEMENTO_DESCONHECIDO);
+    }
+  }
+}
+
+void adicionarVariaveis(std::vector<std::string>& lista, std::vector<Elemento>& netlist, int& num_variaveis, int& num_nos, int& num_elementos){
+	int i;
+	char tipo;
+
+  num_nos=num_variaveis;
+  for (i=1; i<=num_elementos; i++) {
+    tipo=netlist[i].nome[0];
+    if (tipo=='V' || tipo=='E' || tipo=='F' || tipo=='O') {
+      num_variaveis++;
+      /*if (num_variaveis>MAX_NOS) {
+        cout << "As correntes extra excederam o numero de variaveis permitido (" << MAX_NOS << ")" << endl;
+        exit(ERRO_NUM_VARIAVEIS);
+      }*/
+      lista.push_back("j"+netlist[i].nome);
+      netlist[i].x=num_variaveis;
+    }
+    else if (tipo=='H') {
+      num_variaveis+=2;
+      /*if (num_variaveis>MAX_NOS) {
+				std::cout << "As correntes extra excederam o numero de variaveis permitido (" << MAX_NOS << ")" << std::endl;
+        exit(ERRO_NUM_VARIAVEIS);
+      }*/
+      lista.push_back("jx"+netlist[i].nome);
+      netlist[i].x=num_variaveis-1;
+      lista.push_back("jy"+netlist[i].nome);
+      netlist[i].y=num_variaveis;
+    }
+  }
+}
+
+void listarVariaveis(std::vector<std::string> lista, int num_variaveis){
+	std::cout << "Variaveis internas:  " << std::endl;
+  for (int i=0; i<=num_variaveis; i++)
+		std::cout << i << " -> " << lista[i] << std::endl;
+}
+
+void mostrarNetlist(std::vector<Elemento> netlist, int num_elementos){
+	using namespace std;
+	char tipo;
+	int i;
+
+	cout << "Netlist interno final" << endl;
+		for (i=1; i<=num_elementos; i++) {
+			tipo=netlist[i].nome[0];
+			if (tipo=='R' || tipo=='I' || tipo=='V') {
+				cout << netlist[i].nome << " " << netlist[i].a << " " << netlist[i].b << " " << netlist[i].valor << endl;
+			}
+			else if (tipo=='G' || tipo=='E' || tipo=='F' || tipo=='H') {
+				cout << netlist[i].nome << " " << netlist[i].a << " " << netlist[i].b << " " << netlist[i].c << " " << netlist[i].d << " " << netlist[i].valor << endl;
+			}
+			else if (tipo=='O') {
+				cout << netlist[i].nome << " " << netlist[i].a << " " << netlist[i].b << " " << netlist[i].c << " " << netlist[i].d << endl;
+			}
+			if (tipo=='V' || tipo=='E' || tipo=='F' || tipo=='O')
+				cout << "Corrente jx: " << netlist[i].x << endl;
+			else if (tipo=='H')
+				cout << "Correntes jx e jy: " << netlist[i].x << " " << netlist[i].y << endl;
+		}
+}
+
+void montarSistema(std::vector<Elemento>& netlist, std::vector< std::vector<double>>& Yn, int num_variaveis, int num_elementos){
+	int i, j;
+	double g;
+	char tipo;
+	
+
+	for (i=0; i<=num_variaveis; i++) {
+    for (j=0; j<=num_variaveis+1; j++)
+      Yn[i][j]=0;
+  }
+
+  /* Monta estampas */
+  for (i=1; i<=num_elementos; i++) {
+    tipo=netlist[i].nome[0];
+    if (tipo=='R') {
+      g=1/netlist[i].valor;
+      Yn[netlist[i].a][netlist[i].a]+=g;
+      Yn[netlist[i].b][netlist[i].b]+=g;
+      Yn[netlist[i].a][netlist[i].b]-=g;
+      Yn[netlist[i].b][netlist[i].a]-=g;
+    }
+    else if (tipo=='G') {
+      g=netlist[i].valor;
+      Yn[netlist[i].a][netlist[i].c]+=g;
+      Yn[netlist[i].b][netlist[i].d]+=g;
+      Yn[netlist[i].a][netlist[i].d]-=g;
+      Yn[netlist[i].b][netlist[i].c]-=g;
+    }
+    else if (tipo=='I') {
+      g=netlist[i].valor;
+      Yn[netlist[i].a][num_variaveis+1]-=g;
+      Yn[netlist[i].b][num_variaveis+1]+=g;
+    }
+    else if (tipo=='V') {
+      Yn[netlist[i].a][netlist[i].x]+=1;
+      Yn[netlist[i].b][netlist[i].x]-=1;
+      Yn[netlist[i].x][netlist[i].a]-=1;
+      Yn[netlist[i].x][netlist[i].b]+=1;
+      Yn[netlist[i].x][num_variaveis+1]-=netlist[i].valor;
+    }
+    else if (tipo=='E') {
+      g=netlist[i].valor;
+      Yn[netlist[i].a][netlist[i].x]+=1;
+      Yn[netlist[i].b][netlist[i].x]-=1;
+      Yn[netlist[i].x][netlist[i].a]-=1;
+      Yn[netlist[i].x][netlist[i].b]+=1;
+      Yn[netlist[i].x][netlist[i].c]+=g;
+      Yn[netlist[i].x][netlist[i].d]-=g;
+    }
+    else if (tipo=='F') {
+      g=netlist[i].valor;
+      Yn[netlist[i].a][netlist[i].x]+=g;
+      Yn[netlist[i].b][netlist[i].x]-=g;
+      Yn[netlist[i].c][netlist[i].x]+=1;
+      Yn[netlist[i].d][netlist[i].x]-=1;
+      Yn[netlist[i].x][netlist[i].c]-=1;
+      Yn[netlist[i].x][netlist[i].d]+=1;
+    }
+    else if (tipo=='H') {
+      g=netlist[i].valor;
+      Yn[netlist[i].a][netlist[i].y]+=1;
+      Yn[netlist[i].b][netlist[i].y]-=1;
+      Yn[netlist[i].c][netlist[i].x]+=1;
+      Yn[netlist[i].d][netlist[i].x]-=1;
+      Yn[netlist[i].y][netlist[i].a]-=1;
+      Yn[netlist[i].y][netlist[i].b]+=1;
+      Yn[netlist[i].x][netlist[i].c]-=1;
+      Yn[netlist[i].x][netlist[i].d]+=1;
+      Yn[netlist[i].y][netlist[i].x]+=g;
+    }
+    else if (tipo=='O') {
+      Yn[netlist[i].a][netlist[i].x]+=1;
+      Yn[netlist[i].b][netlist[i].x]-=1;
+      Yn[netlist[i].x][netlist[i].c]+=1;
+      Yn[netlist[i].x][netlist[i].d]-=1;
+    }
+	
+	#ifdef DEBUG
+	/* Opcional: Mostra o sistema apos a montagem da estampa */
+		std::ostringstream msg;
+		msg <<  "Sistema apos a estampa de " << netlist[i].nome;
+		mostrarSistema(msg.str(),Yn, num_variaveis);
+		std::cin.get();
+	#endif
+  }
+}
+
+void mostrarSistema(std::string msg, std::vector<std::vector<double>> Yn, int num_variaveis){
+  /* Opcional: Mostra o sistema resolvido */
+	std::cout << msg << std::endl;
+  for (int i=1; i<=num_variaveis; i++) {
+      for (int j=1; j<=num_variaveis+1; j++)
+        if ( (Yn[i][j]!=0) || (j == num_variaveis+1)) 
+					printf("%+3.1f ",Yn[i][j]);
+        else printf(" ... ");
+			std::cout << std::endl;
+    }
+}
