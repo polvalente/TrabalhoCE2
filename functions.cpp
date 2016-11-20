@@ -67,7 +67,19 @@ int numero(std::vector<std::string>& lista, std::string nome, int& num_variaveis
 	num_variaveis++;
 	return num_variaveis;	
 }
-void leituraNetlist(std::vector<std::string>& lista, std::vector<Elemento>& netlist, int argc, char **argv, int& num_elementos, int& num_variaveis){
+void leituraNetlist(
+		std::vector<std::string>& lista, 
+		std::vector<Elemento>& netlist, 
+		std::vector<Elemento>& componentesVariantes, 
+		int argc, 
+		char **argv, 
+		int& num_elementos, 
+		int& num_variaveis,
+		double& tempo_final,
+		double& passo,
+		std::string& metodo,
+		double& passos_por_ponto){
+	
 	using namespace std;
 
 	FILE *arquivo = NULL;
@@ -100,8 +112,8 @@ void leituraNetlist(std::vector<std::string>& lista, std::vector<Elemento>& netl
 	getline(input_file, linha);
 	cout << "Titulo: " << linha << endl;
 	
-	Elemento elemento;
 	while (getline(input_file, linha)) {
+		Elemento elemento;
     num_elementos++; /* Nao usa o netlist[0] */
 		netlist.push_back(elemento);
 
@@ -121,6 +133,14 @@ void leituraNetlist(std::vector<std::string>& lista, std::vector<Elemento>& netl
       netlist[num_elementos].a=numero(lista, na, num_variaveis);
       netlist[num_elementos].b=numero(lista, nb, num_variaveis);
     }
+		else if (tipo=='C' || tipo=='L'){
+			netlist.pop_back();
+			num_elementos--;
+			input >> elemento.nome >> na >> nb >> elemento.valor; 	
+			elemento.a = numero(lista, na, num_variaveis);
+			elemento.b = numero(lista, nb, num_variaveis);
+			componentesVariantes.push_back(elemento);
+		}
     else if (tipo=='G' || tipo=='E' || tipo=='F' || tipo=='H') {
 			input >> netlist[num_elementos].nome >> na >> nb >> nc >> nd >> netlist[num_elementos].valor;
       cout << netlist[num_elementos].nome << " " << na << " " <<  nb << " " << nc << " " << nd << " " << netlist[num_elementos].valor << endl;
@@ -139,8 +159,15 @@ void leituraNetlist(std::vector<std::string>& lista, std::vector<Elemento>& netl
     }
     else if (tipo=='*') { /* Comentario comeca com "*" */
       cout << "Comentario: " << linha << endl;
+			netlist.pop_back();
       num_elementos--;
     }
+		else if (tipo == '.'){ /* Linha que contem o comando .TRAN*/
+			netlist.pop_back();
+			num_elementos--;
+			string temp;
+			input >> temp >> tempo_final >> passo >> metodo >> passos_por_ponto; 
+		}
     else {
       cout << "Elemento desconhecido: " << linha << endl;
       cin.get();
@@ -209,7 +236,7 @@ void mostrarNetlist(std::vector<Elemento> netlist, int num_elementos){
 		}
 }
 
-void montarSistema(std::vector<Elemento>& netlist, std::vector< std::vector<long double>>& Yn, int num_variaveis, int num_elementos){
+void montarSistemaDC(std::vector<Elemento>& netlist, std::vector< std::vector<long double>>& Yn, int num_variaveis, int num_elementos){
 	int i, j;
 	long double g;
 	char tipo;
@@ -307,4 +334,103 @@ void mostrarSistema(std::string msg, std::vector<std::vector<long double>> Yn, i
         else printf(" ... ");
 			std::cout << std::endl;
     }
+}
+
+void adicionarVariaveisDinamicas(std::vector<std::string>& lista, std::vector<Elemento>& componentesVariantes, int& num_variaveis, int& num_nos){
+	unsigned i;
+	char tipo;
+
+  num_nos=num_variaveis;
+  for (i=0; i<componentesVariantes.size(); i++) {
+    tipo=componentesVariantes[i].nome[0];
+    if (tipo=='C' || tipo=='L') {
+      num_variaveis++;
+      lista.push_back("j"+componentesVariantes[i].nome);
+			componentesVariantes[i].x = num_variaveis;
+    }
+  }
+}
+
+void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>& sistema, std::vector<Elemento> componentesVariantes, std::vector<long double> solucoes){
+}
+
+int simulacaoTrapezios(
+		std::vector<Elemento> netlist, 
+		std::vector<Elemento> componentesVariantes, 
+		std::vector<std::string>& lista, 
+		int num_elementos, 
+		int num_nos, 
+		int& num_variaveis, 
+		double passo, 
+		double tempo_final, 
+		double passos_por_ponto){
+	// montar sistema dc
+	// a cada iteracao:
+	//   adiciona estampas dos componentes variantes no tempo
+	//   resolve o sistema nodal
+	//   guarda a solucao da iteracao na linha de uma matriz
+	using namespace std;
+	adicionarVariaveisDinamicas(lista, componentesVariantes, num_variaveis, num_nos); 
+	
+	vector<vector<long double>> sistemaEsqueleto(num_variaveis+1, vector<long double>(num_variaveis+2));
+	montarSistemaDC(netlist, sistemaEsqueleto, num_variaveis, num_elementos);
+	vector<vector<long double>> sistemaCompleto(num_variaveis+1, vector<long double>(num_variaveis+2));
+
+	vector<vector<long double>> solucoes;
+	solucoes.push_back(resolverPontoOperacao(sistemaEsqueleto, componentesVariantes, num_variaveis));
+
+	for (int t0 = 0; t0+passo <= tempo_final; t0+=passo){
+		sistemaCompleto = sistemaEsqueleto;			
+		adicionarEstampasComponentesVariantes(sistemaCompleto, componentesVariantes, solucoes[solucoes.size()-1]);
+		resolverSistema(sistemaCompleto, num_variaveis);
+		vector<long double> solucao(num_variaveis+2);
+		for (int i=0; i<num_variaveis+1; i++)
+			solucao[i] = sistemaCompleto[i][num_variaveis+1];
+		solucoes.push_back(solucao);
+	}
+
+	return OK;
+}
+
+std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long double>> sistema, std::vector<Elemento> componentesVariantes, int num_variaveis){
+	using namespace std;
+	vector<vector<long double>> Yn(num_variaveis+1, vector<long double>(num_variaveis+2));
+	Yn = sistema;
+	double g;
+	for (unsigned i = 0; i < componentesVariantes.size(); i++){
+		char tipo = componentesVariantes[i].nome[0];
+    if (tipo=='C') {
+      g=COND_ABERTO;
+      Yn[componentesVariantes[i].a][componentesVariantes[i].a]+=g;
+      Yn[componentesVariantes[i].b][componentesVariantes[i].b]+=g;
+      Yn[componentesVariantes[i].a][componentesVariantes[i].b]-=g;
+      Yn[componentesVariantes[i].b][componentesVariantes[i].a]-=g;
+
+			Yn[componentesVariantes[i].x][componentesVariantes[i].a] -= 1;
+			Yn[componentesVariantes[i].x][componentesVariantes[i].b] += 1;
+			Yn[componentesVariantes[i].x][componentesVariantes[i].x] += g;
+		}
+		else if (tipo=='L') {
+      g=COND_CURTO;
+      Yn[componentesVariantes[i].a][componentesVariantes[i].a]+=g;
+      Yn[componentesVariantes[i].b][componentesVariantes[i].b]+=g;
+      Yn[componentesVariantes[i].a][componentesVariantes[i].b]-=g;
+      Yn[componentesVariantes[i].b][componentesVariantes[i].a]-=g;
+
+			Yn[componentesVariantes[i].x][componentesVariantes[i].a] -= 1;
+			Yn[componentesVariantes[i].x][componentesVariantes[i].b] += 1;
+			Yn[componentesVariantes[i].x][componentesVariantes[i].x] += g;
+		}
+		else{
+			cout << "Elemento desconhecido: " << componentesVariantes[i].nome << endl;
+			cin.get();
+			exit(ERRO_ELEMENTO_DESCONHECIDO);
+		}
+	}
+	
+	resolverSistema(Yn, num_variaveis);
+	vector<long double> solucao(num_variaveis+1);
+	for (int i=0; i<num_variaveis+1; i++)
+		solucao[i] = Yn[i][num_variaveis+1];
+	return solucao;
 }

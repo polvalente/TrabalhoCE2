@@ -29,16 +29,24 @@ int main(int argc, char** argv)
 {
 	using namespace std;
 	int num_nos, num_variaveis, num_elementos;
+	string metodo = "DC";
+	double passo = 0.1;
+	double tempo_final = 1.0;
+	double passos_por_ponto = 1e3;
+
 
 	vector<string> lista; 
 	vector<Elemento> netlist(1);
+	vector<Elemento> componentesVariantes;
   
-	cout << "Programa demonstrativo de analise nodal modificada" << endl;
-  cout << "Por:\n Antonio Carlos M. de Queiroz - acmq@coe.ufrj.br\nCamyla Tsukuda Romao - \nPaulo Oliveira Lenzi Valente - paulovalente@poli.ufrj.br" << endl;
+	cout << "Simulador construido para o trabalho de Circuitos Eletricos II" << endl;
+  cout << "Camyla Tsukuda Romao - camyla.romao@poli.ufrj.br\nPaulo Oliveira Lenzi Valente - paulovalente@poli.ufrj.br" << endl;
+	cout << "Baseado no programa MNA1 - por Antonio Carlos M. de Queiroz - acmq@coe.ufrj.br"<< endl;
   cout << "Versao " << versao << endl;
 
   /* Leitura do netlist */
-	leituraNetlist(lista, netlist, argc, argv, num_elementos, num_variaveis);
+	leituraNetlist(lista, netlist, componentesVariantes, argc, argv, num_elementos, num_variaveis, tempo_final, passo, metodo, passos_por_ponto);
+	if (componentesVariantes.size() > 0) metodo = "TRAP";
 
   /* Acrescenta variaveis de corrente acima dos nos, anotando no netlist */
 	adicionarVariaveis(lista, netlist, num_variaveis, num_nos, num_elementos);
@@ -56,14 +64,20 @@ int main(int argc, char** argv)
 	cin.get();
 	
 	vector<vector<long double>> Yn(num_variaveis+1, vector<long double>(num_variaveis+2));
-	montarSistema(netlist, Yn, num_variaveis, num_elementos);
-	cin.get();
 
-  /* Resolve o sistema */
-  if (resolverSistema(Yn, num_variaveis)) {
-		cin.get();
-    exit(ERRO_RESOLUCAO_SISTEMA);
-  }
+	if (metodo == "TRAP"){
+		if (int erro = simulacaoTrapezios(netlist, componentesVariantes, lista, num_elementos, num_nos, num_variaveis, passo, tempo_final, passos_por_ponto)){
+			exit(erro);
+		}
+	}
+	else{ /* DC */
+		montarSistemaDC(netlist, Yn, num_variaveis, num_elementos);
+		/* Resolve o sistema */
+		if (resolverSistema(Yn, num_variaveis)) {
+			cin.get();
+			exit(ERRO_RESOLUCAO_SISTEMA);
+		}
+	}
 #ifdef DEBUG
 	/*Opcional: Mostra o sistemar resolvido*/
 	mostrarSistema("Sistema resolvido: ", Yn, num_variaveis);

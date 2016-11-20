@@ -1,6 +1,7 @@
 #ifndef _CLASSES_CE2_
 #define _CLASSES_CE2_
 #include <string>
+#include <vector>
 //Definicoes de classe
 class Elemento{
 	public:
