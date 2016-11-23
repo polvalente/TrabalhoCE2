@@ -38,6 +38,7 @@ int main(int argc, char** argv)
 	vector<string> lista; 
 	vector<Elemento> netlist(1);
 	vector<Elemento> componentesVariantes;
+	vector<Elemento> amp_ops;
   
 	cout << "Simulador construido para o trabalho de Circuitos Eletricos II" << endl;
   cout << "Camyla Tsukuda Romao - camyla.romao@poli.ufrj.br\nPaulo Oliveira Lenzi Valente - paulovalente@poli.ufrj.br" << endl;
@@ -45,7 +46,7 @@ int main(int argc, char** argv)
   cout << "Versao " << versao << endl;
 
   /* Leitura do netlist */
-	leituraNetlist(lista, netlist, componentesVariantes, argc, argv, num_elementos, num_variaveis, tempo_final, passo, metodo, passos_por_ponto);
+	leituraNetlist(lista, netlist, componentesVariantes, argc, argv, num_elementos, num_variaveis, tempo_final, passo, metodo, passos_por_ponto, amp_ops);
 	if (componentesVariantes.size() > 0) metodo = "TRAP";
 
   /* Acrescenta variaveis de corrente acima dos nos, anotando no netlist */
@@ -66,7 +67,7 @@ int main(int argc, char** argv)
 	vector<vector<long double>> Yn(num_variaveis+1, vector<long double>(num_variaveis+2));
 
 	if (metodo == "TRAP"){
-		if (int erro = simulacaoTrapezios(netlist, componentesVariantes, lista, num_elementos, num_nos, num_variaveis, passo, tempo_final, passos_por_ponto)){
+		if (int erro = simulacaoTrapezios(netlist, componentesVariantes, lista, num_elementos, num_nos, num_variaveis, passo, tempo_final, passos_por_ponto, amp_ops)){
 			exit(erro);
 		}
 	}

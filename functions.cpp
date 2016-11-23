@@ -60,6 +60,7 @@ int numero(std::vector<std::string>& lista, std::string nome, int& num_variaveis
 {
 	auto i = std::find(lista.begin(), lista.end(), nome);
 	if (i != lista.end()){
+		//Encontrou na lista
 		return i - lista.begin();
 	}
 	
@@ -78,7 +79,8 @@ void leituraNetlist(
 		double& tempo_final,
 		double& passo,
 		std::string& metodo,
-		double& passos_por_ponto){
+		double& passos_por_ponto,
+		std::vector<Elemento>& amp_ops){
 	
 	using namespace std;
 
@@ -156,6 +158,7 @@ void leituraNetlist(
       netlist[num_elementos].b=numero(lista, nb, num_variaveis);
       netlist[num_elementos].c=numero(lista, nc, num_variaveis);
       netlist[num_elementos].d=numero(lista, nd, num_variaveis);
+			amp_ops.push_back(netlist[num_elementos]);
     }
     else if (tipo=='*') { /* Comentario comeca com "*" */
       cout << "Comentario: " << linha << endl;
@@ -408,7 +411,7 @@ std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long doub
 
 			Yn[componentesVariantes[i].x][componentesVariantes[i].a] -= 1;
 			Yn[componentesVariantes[i].x][componentesVariantes[i].b] += 1;
-			Yn[componentesVariantes[i].x][componentesVariantes[i].x] += g;
+			Yn[componentesVariantes[i].x][componentesVariantes[i].x] += 1/g;
 		}
 		else if (tipo=='L') {
       g=COND_CURTO;
@@ -419,7 +422,7 @@ std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long doub
 
 			Yn[componentesVariantes[i].x][componentesVariantes[i].a] -= 1;
 			Yn[componentesVariantes[i].x][componentesVariantes[i].b] += 1;
-			Yn[componentesVariantes[i].x][componentesVariantes[i].x] += g;
+			Yn[componentesVariantes[i].x][componentesVariantes[i].x] += 1/g;
 		}
 		else{
 			cout << "Elemento desconhecido: " << componentesVariantes[i].nome << endl;
@@ -433,4 +436,102 @@ std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long doub
 	for (int i=0; i<num_variaveis+1; i++)
 		solucao[i] = Yn[i][num_variaveis+1];
 	return solucao;
+}
+
+void condensarLinhas(std::vector<std::vector<long double>>& sistema, std::vector<std::vector<int>> linhas){
+	std::vector<int> linhas_para_remover;
+	for (int index=0; index < linhas.size(); index++){
+		linha_destino = linhas[index][0];
+		for (int i=1; i < linhas[index].size(); i++){
+			int linha_atual = linhas[index][i];
+			sistema[linha_destino] += sistema[linha_atual]; 				
+			linhas_para_remover.push_back(linha_atual);
+		}	
+	}
+	
+	linhas_para_remover = std::sort(linhas_para_remover.begin(), linhas_para_remover.end());
+
+	for(int index=linhas_para_remover.size()-1; index >= 0; index--){
+		sistema.erase(sistema.begin()+linhas_para_remover[index]);
+	}
+}
+
+void condensarColunas(std::vector<std::vector<long double>>& sistema, std::vector<std::vector<int>> colunas){
+	std::vector<int> colunas_para_remover;
+	for (int index=0; index < colunas.size(); index++){
+		coluna_destino = colunas[index][0];
+		for (int i=1; i < colunas[index].size(); i++){
+			int coluna_atual = colunas[index][i];
+			for (int j=0; j<sistema.size(); j++){
+				sistema[j][coluna_destino] += sistema[j][coluna_atual];
+				colunas_para_remover.push_back(coluna_atual);
+			}
+		}	
+	}
+	
+	colunas_para_remover = std::sort(colunas_para_remover.begin(), colunas_para_remover.end());
+
+	for(int index=colunas_para_remover.size()-1; index >= 0; index--){
+		for(int linha=0; linha < sistema.size(); linha++){
+			sistema[linha].erase(sistema[linha].begin()+colunas_para_remover[index]);
+		}
+	}
+}
+
+int adicionarLista(std::vector<std::vector<int>>& lista, int a, int b){
+	//Se a lista esta vazia, adiciona os elementos recebidos numa nova sublista
+	if (lista.size() == 0){
+		std::vector<int> novo(2);
+		novo[0] = a;
+		novo[1] = b;
+		lista.push_back(novo);
+		return OK;
+	}
+
+	//Procura em cada sublista se um elemento esta, e adiciona o outro caso ainda nao esteja nela
+	for(int index = 0; index < lista.size(); index++){
+		auto i = std::find(lista[index].begin(), lista[index].end(), a);
+		if (i != lista[index].end()){
+			//Encontrou a na lista
+			auto j = std::find(lista[index].begin(), lista[index].end(), b);
+			if (j == lista[index].end()){
+				//Nao encontrou b na lista
+				lista[index].push_back(b);
+			}
+			return OK;
+		}
+
+		auto i = std::find(lista[index].begin(), lista[index].end(), b);
+		if (i != lista[index].end()){
+			//Encontrou b na lista
+			auto j = std::find(lista[index].begin(), lista[index].end(), a);
+			if (j == lista[index].end()){
+				//Nao encontrou a na lista
+				lista[index].push_back(a);
+			}
+			return OK;
+		}
+	}
+
+	//Se chegou aqui, nao encontrou nenhum dos elementos na lista, entao devemos adicionar uma nova sublista formada pelos dois elementos
+	std::vector<int> novo(2);
+	novo[0] = a;
+	novo[1] = b;
+	lista.push_back(novo);
+	return OK;
+}
+
+void condensarVariaveis(std::vector<std::vector<long double>>& sistema, std::vector<Elemento> amp_ops){
+	std::vector<std::vector<int>> colunas;
+	std::vector<std::vector<int>> linhas;
+
+	for (int index=0; index < amp_ops.size(); index++){
+		adicionarLista(colunas, amp_ops[index].c, amp_ops[index].d);
+		adicionarLista(linhas, amp_ops[index].a, amp_ops[index].b);
+	}
+
+	condensarLinhas(sistema, linhas);
+	condensarColunas(sistema, colunas);
+
+	return colunas; // colunas contem o mapa de variaveis necessario para o resultado final
 }
