@@ -34,8 +34,8 @@ std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long doub
 
 void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>&, std::vector<Elemento>, std::vector<long double>); 
 
-void condensarVariaveis(std::vector<std::vector<long double>>&, std::vector<Elemento>);
+std::vector<std::vector<int>> condensarVariaveis(std::vector<std::vector<long double>>&, std::vector<Elemento>);
 void condensarLinhas(std::vector<std::vector<long double>>&, std::vector<std::vector<int>>);
-void condensarColunas(std::vector<std::vector<long double>>&, std::vector<std::vector<int>>);
+std::vector<std::vector<int>> condensarColunas(std::vector<std::vector<long double>>&, std::vector<std::vector<int>>);
 
 #endif

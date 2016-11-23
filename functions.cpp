@@ -366,7 +366,8 @@ int simulacaoTrapezios(
 		int& num_variaveis, 
 		double passo, 
 		double tempo_final, 
-		double passos_por_ponto){
+		double passos_por_ponto,
+		std::vector<Elemento>& amp_ops){
 	// montar sistema dc
 	// a cada iteracao:
 	//   adiciona estampas dos componentes variantes no tempo
@@ -440,42 +441,47 @@ std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long doub
 
 void condensarLinhas(std::vector<std::vector<long double>>& sistema, std::vector<std::vector<int>> linhas){
 	std::vector<int> linhas_para_remover;
-	for (int index=0; index < linhas.size(); index++){
-		linha_destino = linhas[index][0];
-		for (int i=1; i < linhas[index].size(); i++){
+	for (unsigned index=0; index < linhas.size(); index++){
+		int	linha_destino = linhas[index][0];
+		for (unsigned i=1; i < linhas[index].size(); i++){
 			int linha_atual = linhas[index][i];
-			sistema[linha_destino] += sistema[linha_atual]; 				
+			for (unsigned j=0; j < sistema[linha_destino].size(); j++)
+				sistema[linha_destino][j] += sistema[linha_atual][j]; 				
 			linhas_para_remover.push_back(linha_atual);
 		}	
 	}
 	
-	linhas_para_remover = std::sort(linhas_para_remover.begin(), linhas_para_remover.end());
+	std::sort(linhas_para_remover.begin(), linhas_para_remover.end());
 
 	for(int index=linhas_para_remover.size()-1; index >= 0; index--){
 		sistema.erase(sistema.begin()+linhas_para_remover[index]);
 	}
 }
 
-void condensarColunas(std::vector<std::vector<long double>>& sistema, std::vector<std::vector<int>> colunas){
+std::vector<std::vector<int>> condensarColunas(std::vector<std::vector<long double>>& sistema, std::vector<std::vector<int>> colunas){
+	std::vector<std::vector<int>> mapaVariaveis;
+
 	std::vector<int> colunas_para_remover;
-	for (int index=0; index < colunas.size(); index++){
-		coluna_destino = colunas[index][0];
-		for (int i=1; i < colunas[index].size(); i++){
+	for (unsigned index=0; index < colunas.size(); index++){
+		int coluna_destino = colunas[index][0];
+		for (unsigned i=1; i < colunas[index].size(); i++){
 			int coluna_atual = colunas[index][i];
-			for (int j=0; j<sistema.size(); j++){
+			for (unsigned j=0; j<sistema.size(); j++){
 				sistema[j][coluna_destino] += sistema[j][coluna_atual];
 				colunas_para_remover.push_back(coluna_atual);
 			}
 		}	
 	}
 	
-	colunas_para_remover = std::sort(colunas_para_remover.begin(), colunas_para_remover.end());
+	std::sort(colunas_para_remover.begin(), colunas_para_remover.end());
 
-	for(int index=colunas_para_remover.size()-1; index >= 0; index--){
-		for(int linha=0; linha < sistema.size(); linha++){
+	for(unsigned index=colunas_para_remover.size()-1; index >= 0; index--){
+		for(unsigned linha=0; linha < sistema.size(); linha++){
 			sistema[linha].erase(sistema[linha].begin()+colunas_para_remover[index]);
 		}
 	}
+
+	return mapaVariaveis;
 }
 
 int adicionarLista(std::vector<std::vector<int>>& lista, int a, int b){
@@ -489,7 +495,7 @@ int adicionarLista(std::vector<std::vector<int>>& lista, int a, int b){
 	}
 
 	//Procura em cada sublista se um elemento esta, e adiciona o outro caso ainda nao esteja nela
-	for(int index = 0; index < lista.size(); index++){
+	for(unsigned index = 0; index < lista.size(); index++){
 		auto i = std::find(lista[index].begin(), lista[index].end(), a);
 		if (i != lista[index].end()){
 			//Encontrou a na lista
@@ -501,7 +507,7 @@ int adicionarLista(std::vector<std::vector<int>>& lista, int a, int b){
 			return OK;
 		}
 
-		auto i = std::find(lista[index].begin(), lista[index].end(), b);
+		i = std::find(lista[index].begin(), lista[index].end(), b);
 		if (i != lista[index].end()){
 			//Encontrou b na lista
 			auto j = std::find(lista[index].begin(), lista[index].end(), a);
@@ -521,17 +527,17 @@ int adicionarLista(std::vector<std::vector<int>>& lista, int a, int b){
 	return OK;
 }
 
-void condensarVariaveis(std::vector<std::vector<long double>>& sistema, std::vector<Elemento> amp_ops){
+std::vector<std::vector<int>> condensarVariaveis(std::vector<std::vector<long double>>& sistema, std::vector<Elemento> amp_ops){
 	std::vector<std::vector<int>> colunas;
 	std::vector<std::vector<int>> linhas;
 
-	for (int index=0; index < amp_ops.size(); index++){
+	for (unsigned index=0; index < amp_ops.size(); index++){
 		adicionarLista(colunas, amp_ops[index].c, amp_ops[index].d);
 		adicionarLista(linhas, amp_ops[index].a, amp_ops[index].b);
 	}
 
 	condensarLinhas(sistema, linhas);
-	condensarColunas(sistema, colunas);
+	std::vector<std::vector<int>> mapaVariaveis = condensarColunas(sistema, colunas);
 
-	return colunas; // colunas contem o mapa de variaveis necessario para o resultado final
+	return mapaVariaveis; // colunas contem o mapa de variaveis necessario para o resultado final
 }
