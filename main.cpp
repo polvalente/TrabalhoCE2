@@ -38,7 +38,6 @@ int main(int argc, char** argv)
 	vector<string> lista; 
 	vector<Elemento> netlist(1);
 	vector<Elemento> componentesVariantes;
-	vector<Elemento> amp_ops;
   
 	cout << "Simulador construido para o trabalho de Circuitos Eletricos II" << endl;
   cout << "Camyla Tsukuda Romao - camyla.romao@poli.ufrj.br\nPaulo Oliveira Lenzi Valente - paulovalente@poli.ufrj.br" << endl;
@@ -46,51 +45,54 @@ int main(int argc, char** argv)
   cout << "Versao " << versao << endl;
 
   /* Leitura do netlist */
-	leituraNetlist(lista, netlist, componentesVariantes, argc, argv, num_elementos, num_variaveis, tempo_final, passo, metodo, passos_por_ponto, amp_ops);
+	leituraNetlist(lista, netlist, componentesVariantes, argc, argv, num_elementos, num_variaveis, tempo_final, passo, metodo, passos_por_ponto);
 	if (componentesVariantes.size() > 0) metodo = "TRAP";
 
   /* Acrescenta variaveis de corrente acima dos nos, anotando no netlist */
 	adicionarVariaveis(lista, netlist, num_variaveis, num_nos, num_elementos);
 	cin.get();
 
-  /* Lista tudo */
-	listarVariaveis(lista, num_variaveis);
-	cin.get();
-
-	mostrarNetlist(netlist, num_elementos);
-	cin.get();
   
-	/* Monta o sistema nodal modificado */
-  cout << "O circuito tem " << num_nos << " nos, " << num_variaveis << " variaveis e " << num_elementos << " elementos" << endl;
-	cin.get();
 	
 	vector<vector<long double>> Yn(num_variaveis+1, vector<long double>(num_variaveis+2));
+#ifdef DEBUG
+	cout << "Metodo de simulacao: " << metodo << endl;
+#endif
 
+	std::vector<std::vector<long double>> sistema; 
 	if (metodo == "TRAP"){
-		if (int erro = simulacaoTrapezios(netlist, componentesVariantes, lista, num_elementos, num_nos, num_variaveis, passo, tempo_final, passos_por_ponto, amp_ops)){
-			exit(erro);
-		}
+		simulacaoTrapezios(netlist, componentesVariantes, lista, num_elementos, num_nos, num_variaveis, passo, tempo_final, passos_por_ponto, sistema);
+		Yn = sistema;
 	}
 	else{ /* DC */
+		/* Lista tudo */
+		listarVariaveis(lista, num_variaveis);
+		cin.get();
+
+		mostrarNetlist(netlist, num_elementos);
+		cin.get();
+		/* Monta o sistema nodal modificado */
+		cout << "O circuito tem " << num_nos << " nos, " << num_variaveis << " variaveis e " << num_elementos << " elementos" << endl;
+		cin.get();
 		montarSistemaDC(netlist, Yn, num_variaveis, num_elementos);
 		/* Resolve o sistema */
 		if (resolverSistema(Yn, num_variaveis)) {
 			cin.get();
 			exit(ERRO_RESOLUCAO_SISTEMA);
 		}
+		#ifdef DEBUG
+			/*Opcional: Mostra o sistemar resolvido*/
+			mostrarSistema("Sistema resolvido: ", Yn, num_variaveis);
+			cin.get();
+		#endif
+		/* Mostra solucao */
+		cout << "Solucao:" << endl;
+		string txt = "Tensao";
+		for (int i=1; i<=num_variaveis; i++) {
+			if (i==num_nos+1) txt = "Corrente";
+			cout << txt << " " << lista[i] << ": " << Yn[i][num_variaveis+1] << endl;
+		}
+		cin.get();
 	}
-#ifdef DEBUG
-	/*Opcional: Mostra o sistemar resolvido*/
-	mostrarSistema("Sistema resolvido: ", Yn, num_variaveis);
-	cin.get();
-#endif
-  /* Mostra solucao */
-  cout << "Solucao:" << endl;
-	string txt = "Tensao";
-  for (int i=1; i<=num_variaveis; i++) {
-    if (i==num_nos+1) txt = "Corrente";
-    cout << txt << " " << lista[i] << ": " << Yn[i][num_variaveis+1] << endl;
-  }
-	cin.get();
   return OK;
 }

@@ -1,0 +1,5 @@
+Circuito RC
+V0100 1 0 10
+R0102 1 2 5
+C0200 2 0 0.2
+.TRAN 5 0.1 TRAP 1

@@ -14,10 +14,6 @@ $ - Chave ideal
 V - Fonte de tensao variante no tempo
 I - Fonte de corrente variante no tempo
 
-Opcional:
-Condensacao de variaveis com amp.op.
-FALTA APENAS DECIDIR QUANDO FAZER A CONDENSACAO
-
 Para cada elemento adicionado:
 	Colocar a estampa em:
 		- adicionarEstampasComponentesVariantes

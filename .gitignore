@@ -1,7 +1,11 @@
 *.*~
 *.cpp~
 *.*swp
+*.*swo
 *.o
 simuladorCircuitos.cpp~
 Simulador
 Makefile~
+teste
+teste.cpp
+resolucao.py

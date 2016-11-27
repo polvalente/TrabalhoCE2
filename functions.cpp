@@ -40,7 +40,10 @@ int resolverSistema(std::vector< std::vector<long double>>& Yn, int& num_variave
     }
     if (fabs(t)<TOLG) {
 			std::cout << "Sistema singular" << std::endl;
-      return ERRO_RESOLUCAO_SISTEMA;
+			#ifdef DEBUG_COMPLETO
+				mostrarSistema("Estado de erro: ",Yn, num_variaveis);
+			#endif
+      exit(ERRO_RESOLUCAO_SISTEMA);
     }
     for (j=num_variaveis+1; j>0; j--) {  /* Basta j>i em vez de j>0 */
       Yn[i][j]/= t;
@@ -51,7 +54,13 @@ int resolverSistema(std::vector< std::vector<long double>>& Yn, int& num_variave
 	    Yn[l][j]-=Yn[l][i]*p;
         }
     }
+			#ifdef DEBUG_COMPLETO
+				mostrarSistema("Estado atual: ",Yn, num_variaveis);
+				std::cin.get();
+			#endif
   }
+
+	Yn[0][Yn[0].size()-1] = 0; // Tensao no terra = 0
   return OK;
 }
 
@@ -79,8 +88,8 @@ void leituraNetlist(
 		double& tempo_final,
 		double& passo,
 		std::string& metodo,
-		double& passos_por_ponto,
-		std::vector<Elemento>& amp_ops){
+		double& passos_por_ponto){
+		//std::vector<Elemento>& amp_ops){
 	
 	using namespace std;
 
@@ -158,7 +167,7 @@ void leituraNetlist(
       netlist[num_elementos].b=numero(lista, nb, num_variaveis);
       netlist[num_elementos].c=numero(lista, nc, num_variaveis);
       netlist[num_elementos].d=numero(lista, nd, num_variaveis);
-			amp_ops.push_back(netlist[num_elementos]);
+			//amp_ops.push_back(netlist[num_elementos]);
     }
     else if (tipo=='*') { /* Comentario comeca com "*" */
       cout << "Comentario: " << linha << endl;
@@ -354,7 +363,46 @@ void adicionarVariaveisDinamicas(std::vector<std::string>& lista, std::vector<El
   }
 }
 
-void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>& sistema, std::vector<Elemento> componentesVariantes, std::vector<long double> solucoes){
+void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>& sistema, std::vector<Elemento> componentesVariantes, std::vector<long double> solucao_anterior, double passo){
+	// Funcao que adiciona as estampas da aproximacao de cada componente variante
+	using std::cout;
+	using std::endl;
+
+	for(auto &componente: componentesVariantes){
+		char tipo = componente.nome[0];
+		if (tipo == 'C'){
+			long double G = 2*(componente.valor)/passo;
+			long double V = solucao_anterior[componente.a] - solucao_anterior[componente.b] + passo/(2*componente.valor) * solucao_anterior[componente.x];
+
+			sistema[componente.a][componente.a] += G;
+			sistema[componente.a][componente.b] += G;
+			sistema[componente.b][componente.a] += G;
+			sistema[componente.b][componente.b] += G;
+			
+			unsigned index = sistema[componente.a].size() - 1;
+			sistema[componente.a][index] += V * G;
+			sistema[componente.b][index] -= V * G;
+
+			sistema[componente.x][componente.a] = -G;
+			sistema[componente.x][componente.b] = G;
+			sistema[componente.x][componente.x] = 1; 
+			sistema[componente.x][index]        = -G*V;
+
+		}
+		/*else if (tipo == 'L'){
+			long double G = passo/(2*componente.valor);
+			long double V = -(solucao_anterior[componente.a] - solucao_anterior[componente.b]) -(2*componente.valor)/passo * solucao_anterior[componente.x];
+		}*/
+		else{
+			cout << "Componente desconhecido: " << componente.nome << endl;	
+			exit(ERRO_ELEMENTO_DESCONHECIDO);
+		}
+
+		#ifdef DEBUG
+		mostrarSistema("Sistema apos a estampa de "+componente.nome+": ", sistema, sistema.size()-1);
+		#endif 
+	}
+
 }
 
 int simulacaoTrapezios(
@@ -367,7 +415,8 @@ int simulacaoTrapezios(
 		double passo, 
 		double tempo_final, 
 		double passos_por_ponto,
-		std::vector<Elemento>& amp_ops){
+		std::vector<std::vector<long double>>& sistemaFinal){
+	//	std::vector<Elemento>& amp_ops){
 	// montar sistema dc
 	// a cada iteracao:
 	//   adiciona estampas dos componentes variantes no tempo
@@ -381,19 +430,40 @@ int simulacaoTrapezios(
 	vector<vector<long double>> sistemaCompleto(num_variaveis+1, vector<long double>(num_variaveis+2));
 
 	vector<vector<long double>> solucoes;
-	solucoes.push_back(resolverPontoOperacao(sistemaEsqueleto, componentesVariantes, num_variaveis));
+	#ifdef DEBUG
+		cout << "Calculando ponto de operacao" << endl;
+		cin.get();
+	#endif
+	vector<long double> solucao_anterior = resolverPontoOperacao(sistemaEsqueleto, componentesVariantes, num_variaveis);
+	solucoes.push_back(solucao_anterior);
+	#ifdef DEBUG
+		cout << "Iniciando solucao por trapezios" << endl;
+		listarVariaveis(lista, num_variaveis);
+		cin.get();
+	#endif
 
-	for (int t0 = 0; t0+passo <= tempo_final; t0+=passo){
+	for (double t0 = 0; t0+passo <= tempo_final; t0+=passo/passos_por_ponto){
+		#ifdef DEBUG
+			cout << "t: " << t0 << endl;
+			for(auto &i: solucoes[solucoes.size()-1]){
+				cout << i << endl;
+			}
+			cout << endl;
+			cin.get();
+		#endif
 		sistemaCompleto = sistemaEsqueleto;			
-		adicionarEstampasComponentesVariantes(sistemaCompleto, componentesVariantes, solucoes[solucoes.size()-1]);
+		adicionarEstampasComponentesVariantes(sistemaCompleto, componentesVariantes, solucao_anterior, passo/passos_por_ponto);
 		resolverSistema(sistemaCompleto, num_variaveis);
 		vector<long double> solucao(num_variaveis+2);
 		for (int i=0; i<num_variaveis+1; i++)
 			solucao[i] = sistemaCompleto[i][num_variaveis+1];
+		//solucao[0] = 0.0;
+		solucao_anterior = solucao;
 		solucoes.push_back(solucao);
 	}
-
+	sistemaFinal = sistemaCompleto;
 	return OK;
+
 }
 
 std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long double>> sistema, std::vector<Elemento> componentesVariantes, int num_variaveis){
@@ -405,10 +475,12 @@ std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long doub
 		char tipo = componentesVariantes[i].nome[0];
     if (tipo=='C') {
       g=COND_ABERTO;
-      Yn[componentesVariantes[i].a][componentesVariantes[i].a]+=g;
-      Yn[componentesVariantes[i].b][componentesVariantes[i].b]+=g;
-      Yn[componentesVariantes[i].a][componentesVariantes[i].b]-=g;
-      Yn[componentesVariantes[i].b][componentesVariantes[i].a]-=g;
+      //Yn[componentesVariantes[i].a][componentesVariantes[i].a]+=g;
+      //Yn[componentesVariantes[i].b][componentesVariantes[i].b]+=g;
+      //Yn[componentesVariantes[i].a][componentesVariantes[i].b]-=g;
+      //Yn[componentesVariantes[i].b][componentesVariantes[i].a]-=g;
+			Yn[componentesVariantes[i].a][componentesVariantes[i].x] += 1;
+			Yn[componentesVariantes[i].b][componentesVariantes[i].x] -= 1;
 
 			Yn[componentesVariantes[i].x][componentesVariantes[i].a] -= 1;
 			Yn[componentesVariantes[i].x][componentesVariantes[i].b] += 1;
@@ -431,6 +503,11 @@ std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long doub
 			exit(ERRO_ELEMENTO_DESCONHECIDO);
 		}
 	}
+
+#ifdef DEBUG
+	mostrarSistema("Ponto de operacao: ",Yn, num_variaveis);
+	cin.get();
+#endif
 	
 	resolverSistema(Yn, num_variaveis);
 	vector<long double> solucao(num_variaveis+1);
@@ -439,7 +516,7 @@ std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long doub
 	return solucao;
 }
 
-void condensarLinhas(std::vector<std::vector<long double>>& sistema, std::vector<std::vector<int>> linhas){
+/*void condensarLinhas(std::vector<std::vector<long double>>& sistema, std::vector<std::vector<int>> linhas){
 	std::vector<int> linhas_para_remover;
 	for (unsigned index=0; index < linhas.size(); index++){
 		int	linha_destino = linhas[index][0];
@@ -458,8 +535,11 @@ void condensarLinhas(std::vector<std::vector<long double>>& sistema, std::vector
 	}
 }
 
-std::vector<std::vector<int>> condensarColunas(std::vector<std::vector<long double>>& sistema, std::vector<std::vector<int>> colunas){
-	std::vector<std::vector<int>> mapaVariaveis;
+std::vector<std::vector<std::string>> condensarColunas(std::vector<std::vector<long double>>& sistema, std::vector<std::vector<int>> colunas, std::vector<std::string> lista){
+	std::vector<std::vector<std::string>> mapaVariaveis(lista.size());
+	for (unsigned index=0; index < lista.size(); index++){
+		mapaVariaveis[index].push_back(lista[index]);
+	}
 
 	std::vector<int> colunas_para_remover;
 	for (unsigned index=0; index < colunas.size(); index++){
@@ -469,18 +549,19 @@ std::vector<std::vector<int>> condensarColunas(std::vector<std::vector<long doub
 			for (unsigned j=0; j<sistema.size(); j++){
 				sistema[j][coluna_destino] += sistema[j][coluna_atual];
 				colunas_para_remover.push_back(coluna_atual);
+				mapaVariaveis[coluna_destino].push_back(mapaVariaveis[coluna_atual][0]);
 			}
 		}	
 	}
 	
 	std::sort(colunas_para_remover.begin(), colunas_para_remover.end());
-
-	for(unsigned index=colunas_para_remover.size()-1; index >= 0; index--){
+	
+	for(unsigned index=colunas_para_remover.size()-1; index > 0; index--){
 		for(unsigned linha=0; linha < sistema.size(); linha++){
 			sistema[linha].erase(sistema[linha].begin()+colunas_para_remover[index]);
 		}
+		mapaVariaveis.erase(mapaVariaveis.begin()+index);
 	}
-
 	return mapaVariaveis;
 }
 
@@ -527,17 +608,20 @@ int adicionarLista(std::vector<std::vector<int>>& lista, int a, int b){
 	return OK;
 }
 
-std::vector<std::vector<int>> condensarVariaveis(std::vector<std::vector<long double>>& sistema, std::vector<Elemento> amp_ops){
-	std::vector<std::vector<int>> colunas;
-	std::vector<std::vector<int>> linhas;
+std::vector< std::vector<std::string> > condensarVariaveis(std::vector< std::vector<long double> >& sistema, std::vector<Elemento> amp_ops, std::vector<std::string> lista){
+	std::vector< std::vector<int> > colunas;
+	std::vector< std::vector<int> > linhas;
+	
+	using namespace std;
 
 	for (unsigned index=0; index < amp_ops.size(); index++){
 		adicionarLista(colunas, amp_ops[index].c, amp_ops[index].d);
 		adicionarLista(linhas, amp_ops[index].a, amp_ops[index].b);
 	}
 
+
 	condensarLinhas(sistema, linhas);
-	std::vector<std::vector<int>> mapaVariaveis = condensarColunas(sistema, colunas);
+	std::vector< std::vector<std::string> > mapaVariaveis = condensarColunas(sistema, colunas, lista);
 
 	return mapaVariaveis; // colunas contem o mapa de variaveis necessario para o resultado final
-}
+}*/
