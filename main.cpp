@@ -32,12 +32,13 @@ int main(int argc, char** argv)
 	string metodo = "DC";
 	double passo = 0.1;
 	double tempo_final = 1.0;
-	double passos_por_ponto = 1e3;
+	unsigned passos_por_ponto = 1;
 
 
 	vector<string> lista; 
 	vector<Elemento> netlist(1);
 	vector<Elemento> componentesVariantes;
+	std::vector<std::vector<long double>> resultados;
   
 	cout << "Simulador construido para o trabalho de Circuitos Eletricos II" << endl;
   cout << "Camyla Tsukuda Romao - camyla.romao@poli.ufrj.br\nPaulo Oliveira Lenzi Valente - paulovalente@poli.ufrj.br" << endl;
@@ -45,12 +46,15 @@ int main(int argc, char** argv)
   cout << "Versao " << versao << endl;
 
   /* Leitura do netlist */
-	leituraNetlist(lista, netlist, componentesVariantes, argc, argv, num_elementos, num_variaveis, tempo_final, passo, metodo, passos_por_ponto);
+	string nomeArquivo = "";
+	if (argc == 2)
+		nomeArquivo = argv[1];
+	leituraNetlist(lista, netlist, componentesVariantes, argc, nomeArquivo, num_elementos, num_variaveis, tempo_final, passo, metodo, passos_por_ponto);
 	if (componentesVariantes.size() > 0) metodo = "TRAP";
 
   /* Acrescenta variaveis de corrente acima dos nos, anotando no netlist */
 	adicionarVariaveis(lista, netlist, num_variaveis, num_nos, num_elementos);
-	cin.get();
+	//cin.get();
 
   
 	
@@ -59,10 +63,9 @@ int main(int argc, char** argv)
 	cout << "Metodo de simulacao: " << metodo << endl;
 #endif
 
-	std::vector<std::vector<long double>> sistema; 
 	if (metodo == "TRAP"){
-		simulacaoTrapezios(netlist, componentesVariantes, lista, num_elementos, num_nos, num_variaveis, passo, tempo_final, passos_por_ponto, sistema);
-		Yn = sistema;
+		simulacaoTrapezios(netlist, componentesVariantes, lista, num_elementos, num_nos, num_variaveis, passo, tempo_final, passos_por_ponto, resultados);
+		escreverResultadosNoArquivo(nomeArquivo, resultados, passo, tempo_final, passos_por_ponto, lista);
 	}
 	else{ /* DC */
 		/* Lista tudo */

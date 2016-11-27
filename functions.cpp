@@ -82,39 +82,37 @@ void leituraNetlist(
 		std::vector<Elemento>& netlist, 
 		std::vector<Elemento>& componentesVariantes, 
 		int argc, 
-		char **argv, 
+		std::string& nomeArquivo,  
 		int& num_elementos, 
 		int& num_variaveis,
 		double& tempo_final,
 		double& passo,
 		std::string& metodo,
-		double& passos_por_ponto){
+		unsigned& passos_por_ponto){
 		//std::vector<Elemento>& amp_ops){
 	
 	using namespace std;
 
 	FILE *arquivo = NULL;
-  string nomearquivo;
 	char tipo;
 	string na,nb,nc,nd;
 
 	if (argc == 2){
-		nomearquivo = argv[1];
-		arquivo = fopen(nomearquivo.c_str(), "r");
+		arquivo = fopen(nomeArquivo.c_str(), "r");
 	}
 
 	while(!arquivo){
 		cout << "Nome do arquivo com o netlist (ex: mna.net): ";
-		cin >> nomearquivo;
-		arquivo=fopen(nomearquivo.c_str(),"r");
+		cin >> nomeArquivo;
+		arquivo=fopen(nomeArquivo.c_str(),"r");
 			if (!arquivo) {
-				cout << "Arquivo " << nomearquivo << " inexistente" << endl;
+				cout << "Arquivo " << nomeArquivo << " inexistente" << endl;
 			}
 	}
 	fclose(arquivo);
   cout << "Lendo netlist" << endl;
 	
-	ifstream input_file(nomearquivo);
+	ifstream input_file(nomeArquivo);
 	num_elementos=0;
 	num_variaveis=0;
 	lista.push_back("0");
@@ -389,10 +387,23 @@ void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>
 			sistema[componente.x][index]        = -G*V;
 
 		}
-		/*else if (tipo == 'L'){
-			long double G = passo/(2*componente.valor);
-			long double V = -(solucao_anterior[componente.a] - solucao_anterior[componente.b]) -(2*componente.valor)/passo * solucao_anterior[componente.x];
-		}*/
+		else if (tipo == 'L'){
+			long double G = 2*componente.valor/passo;
+			long double I = solucao_anterior[componente.x] + passo/(2*componente.valor)*(solucao_anterior[componente.a] - solucao_anterior[componente.b]);  
+			unsigned index = sistema[componente.a].size() - 1;
+
+			sistema[componente.a][componente.a] += G;
+			sistema[componente.a][componente.b] -= G;
+			sistema[componente.b][componente.a] -= G;
+			sistema[componente.b][componente.b] += G;
+			sistema[componente.a][index] -= I;
+			sistema[componente.b][index] += I;
+
+			sistema[componente.x][componente.a] += G;
+			sistema[componente.x][componente.b] -= G;
+			sistema[componente.x][componente.x] -= 1;
+			sistema[componente.x][index] -= I;
+		}
 		else{
 			cout << "Componente desconhecido: " << componente.nome << endl;	
 			exit(ERRO_ELEMENTO_DESCONHECIDO);
@@ -414,8 +425,8 @@ int simulacaoTrapezios(
 		int& num_variaveis, 
 		double passo, 
 		double tempo_final, 
-		double passos_por_ponto,
-		std::vector<std::vector<long double>>& sistemaFinal){
+		unsigned passos_por_ponto,
+		std::vector<std::vector<long double>>& solucoes){
 	//	std::vector<Elemento>& amp_ops){
 	// montar sistema dc
 	// a cada iteracao:
@@ -429,7 +440,7 @@ int simulacaoTrapezios(
 	montarSistemaDC(netlist, sistemaEsqueleto, num_variaveis, num_elementos);
 	vector<vector<long double>> sistemaCompleto(num_variaveis+1, vector<long double>(num_variaveis+2));
 
-	vector<vector<long double>> solucoes;
+	//vector<vector<long double>> solucoes;
 	#ifdef DEBUG
 		cout << "Calculando ponto de operacao" << endl;
 		cin.get();
@@ -461,7 +472,6 @@ int simulacaoTrapezios(
 		solucao_anterior = solucao;
 		solucoes.push_back(solucao);
 	}
-	sistemaFinal = sistemaCompleto;
 	return OK;
 
 }
@@ -488,10 +498,13 @@ std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long doub
 		}
 		else if (tipo=='L') {
       g=COND_CURTO;
-      Yn[componentesVariantes[i].a][componentesVariantes[i].a]+=g;
-      Yn[componentesVariantes[i].b][componentesVariantes[i].b]+=g;
-      Yn[componentesVariantes[i].a][componentesVariantes[i].b]-=g;
-      Yn[componentesVariantes[i].b][componentesVariantes[i].a]-=g;
+      //Yn[componentesVariantes[i].a][componentesVariantes[i].a]+=g;
+      //Yn[componentesVariantes[i].b][componentesVariantes[i].b]+=g;
+      //Yn[componentesVariantes[i].a][componentesVariantes[i].b]-=g;
+      //Yn[componentesVariantes[i].b][componentesVariantes[i].a]-=g;
+			Yn[componentesVariantes[i].a][componentesVariantes[i].x] += 1;
+			Yn[componentesVariantes[i].b][componentesVariantes[i].x] -= 1;
+
 
 			Yn[componentesVariantes[i].x][componentesVariantes[i].a] -= 1;
 			Yn[componentesVariantes[i].x][componentesVariantes[i].b] += 1;
@@ -625,3 +638,77 @@ std::vector< std::vector<std::string> > condensarVariaveis(std::vector< std::vec
 
 	return mapaVariaveis; // colunas contem o mapa de variaveis necessario para o resultado final
 }*/
+
+void splitString(const std::string&, char, std::vector<std::string>&);
+void splitString(const std::string& str, char limite, std::vector<std::string>& resultado){
+	using std::string;
+	string::size_type i = 0;
+	string::size_type j =	str.find(limite);
+	while(j != std::string::npos){
+		resultado.push_back(str.substr(i, j-1));
+		i = ++j;
+		j = str.find(limite,j);
+		if (j == string::npos){
+			resultado.push_back(str.substr(i, str.length()));
+		}	
+	}
+}
+
+void escreverResultadosNoArquivo(
+		std::string nomeArquivo, 
+		std::vector<std::vector<long double>> solucoes, 
+		double passo, 
+		double tempo_final, 
+		unsigned passos_por_ponto, 
+		std::vector<std::string> lista){
+/*
+ * Funcao que grava os resultados em um arquivo com nome igual ao netlist. 
+ * Ex: netlist: circuit.net
+ *		 arquivo: circuit.res
+ */
+	using std::string;
+	using std::vector;
+	using std::cout;
+	using std::endl;
+
+	std::ofstream arquivoSaida;
+	string nomeArquivoSaida = nomeArquivo + ".res";
+	/*string nomeArquivoSaida;
+	vector<string> palavrasNomeArquivo;
+	splitString(nomeArquivo, '.', palavrasNomeArquivo);
+	palavrasNomeArquivo.pop_back();
+	for (auto &palavra: palavrasNomeArquivo){
+		cout << palavra << endl;
+		nomeArquivoSaida += palavra + ".";
+	}
+	nomeArquivoSaida += "res";*/
+	std::cout << "Iniciando a escrita no arquivo" << std::endl;
+
+	arquivoSaida.open(nomeArquivoSaida);
+	arquivoSaida << "t ";
+	for(auto &variavel: lista){
+		arquivoSaida << variavel;
+		//if (variavel != lista[lista.size()-1])
+			arquivoSaida << " ";
+	}
+	arquivoSaida << "\n";
+
+	double tempo = -passo;
+	unsigned contador_passos = 0;
+	for(auto &solucao: solucoes){
+		if (contador_passos % passos_por_ponto != 0){
+			contador_passos++;
+			continue;
+		}
+
+		tempo += passo;
+		arquivoSaida << tempo << " ";
+		for(auto &val: solucao){
+			arquivoSaida << val;
+			//if (val != solucao[solucao.size()-1])
+				arquivoSaida << " ";
+		}
+		arquivoSaida << "\n";
+	}
+	arquivoSaida.close();
+}
