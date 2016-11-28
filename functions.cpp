@@ -4,8 +4,7 @@
 #include <sstream>
 #include <fstream>
 #include <algorithm>
-
-//#include <cmath>
+#include <cmath>
 
 #include "classes.hpp"
 #include "functions.hpp"
@@ -26,7 +25,7 @@ int resolverSistema(std::vector< std::vector<long double>>& Yn, int& num_variave
     t=0.0;
     a=i;
     for (l=i; l<=num_variaveis; l++) {
-      if (fabs(Yn[l][i])>fabs(t)) {
+      if (abs(Yn[l][i])>abs(t)) {
 				a=l;
 				t=Yn[l][i];
       }
@@ -38,7 +37,7 @@ int resolverSistema(std::vector< std::vector<long double>>& Yn, int& num_variave
 				Yn[a][l]=p;
       }
     }
-    if (fabs(t)<TOLG) {
+    if (abs(t)<TOLG) {
 			std::cout << "Sistema singular" << std::endl;
 			#ifdef DEBUG_COMPLETO
 				mostrarSistema("Estado de erro: ",Yn, num_variaveis);
@@ -682,7 +681,7 @@ void escreverResultadosNoArquivo(
 		nomeArquivoSaida += palavra + ".";
 	}
 	nomeArquivoSaida += "res";*/
-	std::cout << "Iniciando a escrita no arquivo" << std::endl;
+	std::cout << "Iniciando a escrita no arquivo: " << nomeArquivoSaida << std::endl;
 
 	arquivoSaida.open(nomeArquivoSaida);
 	arquivoSaida << "t ";
@@ -703,8 +702,11 @@ void escreverResultadosNoArquivo(
 
 		tempo += passo;
 		arquivoSaida << tempo << " ";
-		for(auto &val: solucao){
-			arquivoSaida << val;
+		int ii = 0;
+		for(unsigned index_solucao = 0; index_solucao < lista.size(); index_solucao++){
+			arquivoSaida << solucao[index_solucao];
+			//std::cout << lista[ii] << ": "<< solucao[index_solucao] << std::endl;
+			ii++;
 			//if (val != solucao[solucao.size()-1])
 				arquivoSaida << " ";
 		}
