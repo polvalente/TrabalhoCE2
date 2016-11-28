@@ -25,7 +25,7 @@ int resolverSistema(std::vector< std::vector<long double>>& Yn, int& num_variave
     t=0.0;
     a=i;
     for (l=i; l<=num_variaveis; l++) {
-      if (abs(Yn[l][i])>abs(t)) {
+      if (std::abs(Yn[l][i])>std::abs(t)) {
 				a=l;
 				t=Yn[l][i];
       }
@@ -37,7 +37,7 @@ int resolverSistema(std::vector< std::vector<long double>>& Yn, int& num_variave
 				Yn[a][l]=p;
       }
     }
-    if (abs(t)<TOLG) {
+    if (std::abs(t)<TOLG) {
 			std::cout << "Sistema singular" << std::endl;
 			#ifdef DEBUG_COMPLETO
 				mostrarSistema("Estado de erro: ",Yn, num_variaveis);
