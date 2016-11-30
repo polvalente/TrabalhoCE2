@@ -33,7 +33,7 @@ int simulacaoTrapezios(std::vector<Elemento>, std::vector<Elemento>, std::vector
 void adicionarVariaveisDinamicas(std::vector<std::string>&, std::vector<Elemento>&, int&, int&);
 std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long double>>, std::vector<Elemento>, int); 
 
-void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>&, std::vector<Elemento>, std::vector<long double>); 
+void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>&, std::vector<Elemento>, std::vector<long double>, double, double); 
 
 /*
 std::vector<std::vector<std::string>> condensarVariaveis(std::vector<std::vector<long double>>&, std::vector<Elemento>, std::vector<std::string>);

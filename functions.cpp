@@ -135,12 +135,34 @@ void leituraNetlist(
 
 		istringstream input(linha);
 
-    if (tipo=='R' || tipo=='I' || tipo=='V') {
+    if (tipo=='R') {
 			input >> netlist[num_elementos].nome >> na >> nb >> netlist[num_elementos].valor;
       cout << netlist[num_elementos].nome << " " << na << " " <<  nb << " " << netlist[num_elementos].valor << endl;
       netlist[num_elementos].a=numero(lista, na, num_variaveis);
       netlist[num_elementos].b=numero(lista, nb, num_variaveis);
     }
+		else if (tipo == 'I' || tipo == 'V'){
+			num_elementos--;
+			netlist.pop_back();
+			string tipoFonte;
+			input >> elemento.nome >> na >> nb >> elemento.tipoFonte;
+			elemento.a = numero(na);
+			elemento.b = numero(nb);
+			if (tipoFonte == "DC"){
+				input >> elemento.valor;
+			}
+			else if(tipoFonte == "SIN"){
+				input >> elemento.nivelDC >> elemento.amplitude >> elemento.frequencia >> elemento.atraso >> elemento.amortecimento >> elemento.defasagem >> elemento.numeroCiclos;
+			}
+			else if(tipoFonte == "PULSE"){
+				input >> elemento.amplitude >> elemento.amplitude2 >> elemento.atraso >> elemento.tempoSubida >> elemento.tempoDescida >> elemento.tempoLigada >> elemento.periodo >> elemento.numeroCiclos;
+			}
+			else{
+				cout << "Tipo da fonte " << elemento.nome << " nao reconhecido." << endl;
+				exit(ERRO_ELEMENTO_DESCONHECIDO);
+			}
+			componentesVariantes.push_back(elemento);
+		}
 		else if (tipo=='C' || tipo=='L'){
 			netlist.pop_back();
 			num_elementos--;
@@ -360,7 +382,7 @@ void adicionarVariaveisDinamicas(std::vector<std::string>& lista, std::vector<El
   }
 }
 
-void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>& sistema, std::vector<Elemento> componentesVariantes, std::vector<long double> solucao_anterior, double passo){
+void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>& sistema, std::vector<Elemento> componentesVariantes, std::vector<long double> solucao_anterior, double passo, double t){
 	// Funcao que adiciona as estampas da aproximacao de cada componente variante
 	using std::cout;
 	using std::endl;
@@ -372,19 +394,18 @@ void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>
 			long double V = solucao_anterior[componente.a] - solucao_anterior[componente.b] + passo/(2*componente.valor) * solucao_anterior[componente.x];
 
 			sistema[componente.a][componente.a] += G;
-			sistema[componente.a][componente.b] += G;
-			sistema[componente.b][componente.a] += G;
+			sistema[componente.a][componente.b] -= G;
+			sistema[componente.b][componente.a] -= G;
 			sistema[componente.b][componente.b] += G;
 			
 			unsigned index = sistema[componente.a].size() - 1;
 			sistema[componente.a][index] += V * G;
 			sistema[componente.b][index] -= V * G;
 
-			sistema[componente.x][componente.a] = -G;
-			sistema[componente.x][componente.b] = G;
-			sistema[componente.x][componente.x] = 1; 
-			sistema[componente.x][index]        = -G*V;
-
+			sistema[componente.x][componente.a] += -G;
+			sistema[componente.x][componente.b] += G;
+			sistema[componente.x][componente.x] += 1; 
+			sistema[componente.x][index]        += -G*V;
 		}
 		else if (tipo == 'L'){
 			long double G = 2*componente.valor/passo;
@@ -402,6 +423,47 @@ void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>
 			sistema[componente.x][componente.b] -= G;
 			sistema[componente.x][componente.x] -= 1;
 			sistema[componente.x][index] -= I;
+		}
+		else if(tipo == 'V'){
+			if (elemento.tipoFonte == "DC"){
+				Yn[elemento.x][elemento.a] += 1;
+				Yn[elemento.x][elemento.b] -= 1;
+				Yn[elemento.x][num_variaveis+1] += elemento.valor;
+			}
+			else if (elemento.tipoFonte == "SIN"){
+				Yn[elemento.x][elemento.a] += 1;
+				Yn[elemento.x][elemento.b] -= 1;
+				Yn[elemento.x][num_variaveis+1] += elemento.valorFonteSenoidal(t);
+			}
+			else if (elemento.tipoFonte == "PULSE"){
+				Yn[elemento.x][elemento.a] += 1;
+				Yn[elemento.x][elemento.b] -= 1;
+				Yn[elemento.x][num_variaveis+1] += elemento.valorFontePulse(t);
+			}
+			else{
+				cout << "Elemento desconhecido: " << elemento.nome << endl;
+				cin.get();
+				exit(ERRO_ELEMENTO_DESCONHECIDO);
+			}
+		}
+		else if(tipo == 'I'){
+			if (elemento.tipoFonte == "DC"){
+				Yn[elemento.a][num_variaveis+1] -= elemento.valor;
+				Yn[elemento.b][num_variaveis+1] += elemento.valor;
+			}
+			else if (elemento.tipoFonte == "SIN"){
+				Yn[elemento.a][num_variaveis+1] -= elemento.valorFonteSenoidal(t);
+				Yn[elemento.b][num_variaveis+1] += elemento.valorFonteSenoidal(t);
+			}
+			else if (elemento.tipoFonte == "PULSE"){
+				Yn[elemento.a][num_variaveis+1] -= elemento.valorFontePulse(t);
+				Yn[elemento.b][num_variaveis+1] += elemento.valorFontePulse(t);
+			}
+			else{
+				cout << "Elemento desconhecido: " << elemento.nome << endl;
+				cin.get();
+				exit(ERRO_ELEMENTO_DESCONHECIDO);
+			}
 		}
 		else{
 			cout << "Componente desconhecido: " << componente.nome << endl;	
@@ -462,7 +524,7 @@ int simulacaoTrapezios(
 			cin.get();
 		#endif
 		sistemaCompleto = sistemaEsqueleto;			
-		adicionarEstampasComponentesVariantes(sistemaCompleto, componentesVariantes, solucao_anterior, passo/passos_por_ponto);
+		adicionarEstampasComponentesVariantes(sistemaCompleto, componentesVariantes, solucao_anterior, passo/passos_por_ponto, t0);
 		resolverSistema(sistemaCompleto, num_variaveis);
 		vector<long double> solucao(num_variaveis+2);
 		for (int i=0; i<num_variaveis+1; i++)
@@ -480,37 +542,71 @@ std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long doub
 	vector<vector<long double>> Yn(num_variaveis+1, vector<long double>(num_variaveis+2));
 	Yn = sistema;
 	double g;
-	for (unsigned i = 0; i < componentesVariantes.size(); i++){
-		char tipo = componentesVariantes[i].nome[0];
+	double t = 0.0;
+	//for (unsigned i = 0; i < componentesVariantes.size(); i++){
+	for(auto &elemento: componentesVariantes){
+		char tipo = elemento.nome[0];
     if (tipo=='C') {
       g=COND_ABERTO;
-      //Yn[componentesVariantes[i].a][componentesVariantes[i].a]+=g;
-      //Yn[componentesVariantes[i].b][componentesVariantes[i].b]+=g;
-      //Yn[componentesVariantes[i].a][componentesVariantes[i].b]-=g;
-      //Yn[componentesVariantes[i].b][componentesVariantes[i].a]-=g;
-			Yn[componentesVariantes[i].a][componentesVariantes[i].x] += 1;
-			Yn[componentesVariantes[i].b][componentesVariantes[i].x] -= 1;
+			Yn[elemento.a][elemento.x] += 1;
+			Yn[elemento.b][elemento.x] -= 1;
 
-			Yn[componentesVariantes[i].x][componentesVariantes[i].a] -= 1;
-			Yn[componentesVariantes[i].x][componentesVariantes[i].b] += 1;
-			Yn[componentesVariantes[i].x][componentesVariantes[i].x] += 1/g;
+			Yn[elemento.x][elemento.a] -= 1;
+			Yn[elemento.x][elemento.b] += 1;
+			Yn[elemento.x][elemento.x] += 1/g;
 		}
 		else if (tipo=='L') {
       g=COND_CURTO;
-      //Yn[componentesVariantes[i].a][componentesVariantes[i].a]+=g;
-      //Yn[componentesVariantes[i].b][componentesVariantes[i].b]+=g;
-      //Yn[componentesVariantes[i].a][componentesVariantes[i].b]-=g;
-      //Yn[componentesVariantes[i].b][componentesVariantes[i].a]-=g;
-			Yn[componentesVariantes[i].a][componentesVariantes[i].x] += 1;
-			Yn[componentesVariantes[i].b][componentesVariantes[i].x] -= 1;
+			Yn[elemento.a][elemento.x] += 1;
+			Yn[elemento.b][elemento.x] -= 1;
 
-
-			Yn[componentesVariantes[i].x][componentesVariantes[i].a] -= 1;
-			Yn[componentesVariantes[i].x][componentesVariantes[i].b] += 1;
-			Yn[componentesVariantes[i].x][componentesVariantes[i].x] += 1/g;
+			Yn[elemento.x][elemento.a] -= 1;
+			Yn[elemento.x][elemento.b] += 1;
+			Yn[elemento.x][elemento.x] += 1/g;
+		}
+		else if(tipo == 'V'){
+			if (elemento.tipoFonte == "DC"){
+				Yn[elemento.x][elemento.a] += 1;
+				Yn[elemento.x][elemento.b] -= 1;
+				Yn[elemento.x][num_variaveis+1] += elemento.valor;
+			}
+			else if (elemento.tipoFonte == "SIN"){
+				Yn[elemento.x][elemento.a] += 1;
+				Yn[elemento.x][elemento.b] -= 1;
+				Yn[elemento.x][num_variaveis+1] += elemento.valorFonteSenoidal(t);
+			}
+			else if (elemento.tipoFonte == "PULSE"){
+				Yn[elemento.x][elemento.a] += 1;
+				Yn[elemento.x][elemento.b] -= 1;
+				Yn[elemento.x][num_variaveis+1] += elemento.valorFontePulse(t);
+			}
+			else{
+				cout << "Elemento desconhecido: " << elemento.nome << endl;
+				cin.get();
+				exit(ERRO_ELEMENTO_DESCONHECIDO);
+			}
+		}
+		else if(tipo == 'I'){
+			if (elemento.tipoFonte == "DC"){
+				Yn[elemento.a][num_variaveis+1] -= elemento.valor;
+				Yn[elemento.b][num_variaveis+1] += elemento.valor;
+			}
+			else if (elemento.tipoFonte == "SIN"){
+				Yn[elemento.a][num_variaveis+1] -= elemento.valorFonteSenoidal(t);
+				Yn[elemento.b][num_variaveis+1] += elemento.valorFonteSenoidal(t);
+			}
+			else if (elemento.tipoFonte == "PULSE"){
+				Yn[elemento.a][num_variaveis+1] -= elemento.valorFontePulse(t);
+				Yn[elemento.b][num_variaveis+1] += elemento.valorFontePulse(t);
+			}
+			else{
+				cout << "Elemento desconhecido: " << elemento.nome << endl;
+				cin.get();
+				exit(ERRO_ELEMENTO_DESCONHECIDO);
+			}
 		}
 		else{
-			cout << "Elemento desconhecido: " << componentesVariantes[i].nome << endl;
+			cout << "Elemento desconhecido: " << elemento.nome << endl;
 			cin.get();
 			exit(ERRO_ELEMENTO_DESCONHECIDO);
 		}
@@ -638,19 +734,21 @@ std::vector< std::vector<std::string> > condensarVariaveis(std::vector< std::vec
 	return mapaVariaveis; // colunas contem o mapa de variaveis necessario para o resultado final
 }*/
 
-void splitString(const std::string&, char, std::vector<std::string>&);
-void splitString(const std::string& str, char limite, std::vector<std::string>& resultado){
-	using std::string;
-	string::size_type i = 0;
-	string::size_type j =	str.find(limite);
-	while(j != std::string::npos){
-		resultado.push_back(str.substr(i, j-1));
-		i = ++j;
-		j = str.find(limite,j);
-		if (j == string::npos){
-			resultado.push_back(str.substr(i, str.length()));
-		}	
+
+std::string converterExtensao(std::string nomeArquivo, std::string extensao);
+std::string converterExtensao(std::string nomeArquivo, std::string extensao){
+	std::istringstream ss(nomeArquivo);
+	std::string palavra;
+	std::string nomeArquivoSaida = "";
+	std::string ultimaPalavra = "";
+	
+	while(std::getline(ss, palavra, '.')){
+		nomeArquivoSaida += ultimaPalavra + ".";
+		ultimaPalavra = palavra;
 	}
+
+	nomeArquivoSaida += "res";
+	return nomeArquivoSaida;
 }
 
 void escreverResultadosNoArquivo(
@@ -671,16 +769,8 @@ void escreverResultadosNoArquivo(
 	using std::endl;
 
 	std::ofstream arquivoSaida;
-	string nomeArquivoSaida = nomeArquivo + ".res";
-	/*string nomeArquivoSaida;
-	vector<string> palavrasNomeArquivo;
-	splitString(nomeArquivo, '.', palavrasNomeArquivo);
-	palavrasNomeArquivo.pop_back();
-	for (auto &palavra: palavrasNomeArquivo){
-		cout << palavra << endl;
-		nomeArquivoSaida += palavra + ".";
-	}
-	nomeArquivoSaida += "res";*/
+	string nomeArquivoSaida = converterExtensao(nomeArquivo,".res");
+
 	std::cout << "Iniciando a escrita no arquivo: " << nomeArquivoSaida << std::endl;
 
 	arquivoSaida.open(nomeArquivoSaida);

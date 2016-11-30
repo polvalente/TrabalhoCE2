@@ -4,10 +4,33 @@
 #include <vector>
 //Definicoes de classe
 class Elemento{
+  using std::string;
 	public:
-		std::string nome;
+		string nome;
 		double valor;
 		int a,b,c,d,x,y;
+        
+    string tipoFonte;
+    
+    double atraso;
+    double amplitude;
+    double numeroCiclos;
+
+    //Parametros da fonte senoidal
+    double frequencia;
+    double nivelDC;
+    double amortecimento;
+    double defasagem;
+
+    //Parametros da fonte de pulso
+    double amplitude2;
+    double tempoSubida;
+    double tempoDescida;
+    double tempoLigada;
+    double Periodo;
+    
 		Elemento();
+    double valorFonteSenoidal(double);
+    double valorFontePulse(double);
 };
 #endif

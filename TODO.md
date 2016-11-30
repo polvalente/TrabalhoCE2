@@ -16,6 +16,7 @@ V - Fonte de tensao variante no tempo
 I - Fonte de corrente variante no tempo
 
 Para cada elemento adicionado:
+	Mudar funcao de leitura do netlist
 	Colocar a estampa em:
 		- adicionarEstampasComponentesVariantes
 		- resolverPontoOperacao
