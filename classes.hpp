@@ -3,10 +3,11 @@
 #include <string>
 #include <vector>
 //Definicoes de classe
+using std::string;
 class Elemento{
-  using std::string;
 	public:
-		string nome;
+    
+    string nome;
 		double valor;
 		int a,b,c,d,x,y;
         
@@ -27,7 +28,7 @@ class Elemento{
     double tempoSubida;
     double tempoDescida;
     double tempoLigada;
-    double Periodo;
+    double periodo;
     
 		Elemento();
     double valorFonteSenoidal(double);

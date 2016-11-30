@@ -19,5 +19,9 @@ debug:
 build: ${OBJS} 
 	${CPP_LD} ${CPP_LD_FLAGS} Simulador ${OBJS} 
 
+rebuild:
+	make clean
+	make build
+
 clean:
 	rm -rf Simulador ${OBJS}
