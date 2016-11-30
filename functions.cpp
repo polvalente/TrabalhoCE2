@@ -769,8 +769,8 @@ void escreverResultadosNoArquivo(
 	using std::endl;
 
 	std::ofstream arquivoSaida;
-	string nomeArquivoSaida = converterExtensao(nomeArquivo,".res");
-
+//	string nomeArquivoSaida = converterExtensao(nomeArquivo,".res");
+	std::string nomeArquivoSaida = nomeArquivo + ".res";
 	std::cout << "Iniciando a escrita no arquivo: " << nomeArquivoSaida << std::endl;
 
 	arquivoSaida.open(nomeArquivoSaida);
