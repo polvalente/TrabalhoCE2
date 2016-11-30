@@ -740,14 +740,20 @@ std::string converterExtensao(std::string nomeArquivo, std::string extensao){
 	std::istringstream ss(nomeArquivo);
 	std::string palavra;
 	std::string nomeArquivoSaida = "";
-	std::string ultimaPalavra = "";
+	std::string ultimaPalavra;
 	
+	std::getline(ss, ultimaPalavra, '.');
+	
+	bool entrou = false;
 	while(std::getline(ss, palavra, '.')){
+		entrou = true;
 		nomeArquivoSaida += ultimaPalavra + ".";
 		ultimaPalavra = palavra;
 	}
+	if(!entrou)//caso nao haja extensao de arquivo, apenas faz o append
+		nomeArquivoSaida += ultimaPalavra+".";
 
-	nomeArquivoSaida += "res";
+	nomeArquivoSaida += extensao;
 	return nomeArquivoSaida;
 }
 
@@ -769,9 +775,9 @@ void escreverResultadosNoArquivo(
 	using std::endl;
 
 	std::ofstream arquivoSaida;
-//	string nomeArquivoSaida = converterExtensao(nomeArquivo,".res");
-	std::string nomeArquivoSaida = nomeArquivo + ".res";
-	std::cout << "Iniciando a escrita no arquivo: " << nomeArquivoSaida << std::endl;
+	string nomeArquivoSaida = converterExtensao(nomeArquivo,"res");
+	//std::string nomeArquivoSaida = nomeArquivo + ".res";
+	cout << "Iniciando a escrita no arquivo: " << nomeArquivoSaida << endl;
 
 	arquivoSaida.open(nomeArquivoSaida);
 	arquivoSaida << "t ";
