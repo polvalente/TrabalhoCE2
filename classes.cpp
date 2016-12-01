@@ -5,11 +5,21 @@ Elemento::Elemento(void){
 }
 
 double Elemento::valorFonteSenoidal(double t){
-	return nivelDC + amplitude * std::exp(-amortecimento*t) * std::sin(2*M_PI*frequencia * t + M_PI/180*defasagem);
+	if (t < atraso){
+		return nivelDC + amplitude * std::sin(M_PI/180*defasagem);
+	}
+	else
+		return nivelDC + amplitude * std::exp(-amortecimento*(t-atraso)) * std::sin(2*M_PI*frequencia * (t-atraso) + M_PI/180*defasagem);
 }
 
-double Elemento::valorFontePulse(double t){
+double Elemento::valorFontePulse(double t, double passo){
 	double tempo = fmod(t,periodo);
+	if (tempoDescida == 0){
+		tempoDescida = passo;
+	}
+	if (tempoSubida == 0){
+		tempoSubida = passo;
+	}
 	if (tempo < atraso){
 		return amplitude;
 	}

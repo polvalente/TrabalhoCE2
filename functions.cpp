@@ -448,7 +448,7 @@ void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>
 			else if (componente.tipoFonte == "PULSE"){
 				sistema[componente.x][componente.a] += 1;
 				sistema[componente.x][componente.b] -= 1;
-				sistema[componente.x][index] += componente.valorFontePulse(t);
+				sistema[componente.x][index] += componente.valorFontePulse(t,passo);
 
 				sistema[componente.a][componente.x] += 1;
 				sistema[componente.b][componente.x] -= 1;
@@ -469,8 +469,8 @@ void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>
 				sistema[componente.b][index] += componente.valorFonteSenoidal(t);
 			}
 			else if (componente.tipoFonte == "PULSE"){
-				sistema[componente.a][index] -= componente.valorFontePulse(t);
-				sistema[componente.b][index] += componente.valorFontePulse(t);
+				sistema[componente.a][index] -= componente.valorFontePulse(t,passo);
+				sistema[componente.b][index] += componente.valorFontePulse(t,passo);
 			}
 			else{
 				cout << "Elemento desconhecido: " << componente.nome << endl;
@@ -599,7 +599,7 @@ std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long doub
 			else if (elemento.tipoFonte == "PULSE"){
 				Yn[elemento.x][elemento.a] += 1;
 				Yn[elemento.x][elemento.b] -= 1;
-				Yn[elemento.x][index] += elemento.valorFontePulse(t);
+				Yn[elemento.x][index] += elemento.valorFontePulse(t,passo);
 
 				Yn[elemento.a][elemento.x] += 1;
 				Yn[elemento.b][elemento.x] -= 1;
@@ -620,8 +620,8 @@ std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long doub
 				Yn[elemento.b][num_variaveis+1] += elemento.valorFonteSenoidal(t);
 			}
 			else if (elemento.tipoFonte == "PULSE"){
-				Yn[elemento.a][num_variaveis+1] -= elemento.valorFontePulse(t);
-				Yn[elemento.b][num_variaveis+1] += elemento.valorFontePulse(t);
+				Yn[elemento.a][num_variaveis+1] -= elemento.valorFontePulse(t,passo);
+				Yn[elemento.b][num_variaveis+1] += elemento.valorFontePulse(t,passo);
 			}
 			else{
 				cout << "Elemento desconhecido: " << elemento.nome << endl;

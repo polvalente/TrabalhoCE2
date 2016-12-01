@@ -40,10 +40,13 @@ int main(int argc, char** argv)
 	vector<Elemento> componentesVariantes;
 	std::vector<std::vector<long double>> resultados;
   
-	cout << "Simulador construido para o trabalho de Circuitos Eletricos II" << endl;
-  cout << "Camyla Tsukuda Romao - camyla.romao@poli.ufrj.br\nPaulo Oliveira Lenzi Valente - paulovalente@poli.ufrj.br" << endl;
-	cout << "Baseado no programa MNA1 - por Antonio Carlos M. de Queiroz - acmq@coe.ufrj.br"<< endl;
-  cout << "Versao " << versao << endl;
+	cout << "Simulador construido para o trabalho de Circuitos Eletricos II\n\n" << endl;
+	cout << "Feito por: " << endl;
+  cout << "Alice Fontes - alicefontes@poli.ufrj.br" << endl;
+	cout << "Camyla Tsukuda Romao - camyla.romao@poli.ufrj.br" << endl;
+	cout << "Paulo Oliveira Lenzi Valente - paulovalente@poli.ufrj.br\n" << endl;
+	cout << "Baseado no programa MNA1 - por Antonio Carlos M. de Queiroz - acmq@coe.ufrj.br\n"<< endl;
+  cout << "Versao " << versao << "\n\n" << endl;
 
   /* Leitura do netlist */
 	string nomeArquivo = "";
