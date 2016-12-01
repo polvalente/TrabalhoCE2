@@ -2,11 +2,11 @@ _OK_ - C - Capacitor
 		 G = 2C/deltaT
 		 V = V(t0) + deltat/2C * j(t0)
 	
-L - Indutor
+_OK_ L - Indutor
 		 G = deltaT/2L
 		 V = -2L/delta * j(t0) - V(t0) 
 
-K - Transformador Ideal
+_OK_ K - Transformador Ideal
 
 D - Diodo ideal
 $ - Chave ideal

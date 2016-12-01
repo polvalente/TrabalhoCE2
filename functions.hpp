@@ -31,7 +31,7 @@ void mostrarSistema(std::string, std::vector<std::vector<long double>>, int);
 //int simulacaoTrapezios(std::vector<Elemento>, std::vector<Elemento>, std::vector<std::string>&, int, int, int&, double, double, double, std::vector<Elemento>&);
 int simulacaoTrapezios(std::vector<Elemento>, std::vector<Elemento>, std::vector<std::string>&, int, int, int&, double, double, unsigned, std::vector<std::vector<long double>>&);
 void adicionarVariaveisDinamicas(std::vector<std::string>&, std::vector<Elemento>&, int&, int&);
-std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long double>>, std::vector<Elemento>, int); 
+std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long double>>, std::vector<Elemento>, int, double); 
 
 void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>&, std::vector<Elemento>, std::vector<long double>, double, double); 
 

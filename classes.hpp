@@ -32,6 +32,6 @@ class Elemento{
     
 		Elemento();
     double valorFonteSenoidal(double);
-    double valorFontePulse(double);
+    double valorFontePulse(double,double);
 };
 #endif

@@ -8,8 +8,8 @@
 #define MAX_ELEM 50
 #define MAX_NOS 50
 #define TOLG 1e-9
-#define COND_CURTO  1e2
-#define COND_ABERTO 1e-2
+#define COND_CURTO  1e10
+#define COND_ABERTO 1/COND_CURTO
 
 #define OK			    0
 #define ERRO_RESOLUCAO_SISTEMA	    1

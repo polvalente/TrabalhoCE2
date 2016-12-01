@@ -145,16 +145,21 @@ void leituraNetlist(
 			num_elementos--;
 			netlist.pop_back();
 			input >> elemento.nome >> na >> nb >> elemento.tipoFonte;
+			cout << elemento.nome << " " << na << " " << nb << " " << elemento.tipoFonte;
+
 			elemento.a = numero(lista, na, num_variaveis);
 			elemento.b = numero(lista, nb, num_variaveis);
 			if (elemento.tipoFonte == "DC"){
 				input >> elemento.valor;
+				cout << " " << elemento.valor << endl;
 			}
 			else if(elemento.tipoFonte == "SIN"){
 				input >> elemento.nivelDC >> elemento.amplitude >> elemento.frequencia >> elemento.atraso >> elemento.amortecimento >> elemento.defasagem >> elemento.numeroCiclos;
+				cout << " " << elemento.nivelDC << " " << elemento.amplitude << " " << elemento.frequencia << " " << elemento.atraso << " " << elemento.amortecimento << " " << elemento.defasagem << " " << elemento.numeroCiclos << endl;
 			}
 			else if(elemento.tipoFonte == "PULSE"){
 				input >> elemento.amplitude >> elemento.amplitude2 >> elemento.atraso >> elemento.tempoSubida >> elemento.tempoDescida >> elemento.tempoLigada >> elemento.periodo >> elemento.numeroCiclos;
+				cout << " " << elemento.amplitude << " " << elemento.amplitude2 << " " << elemento.atraso << " " << elemento.tempoSubida << " " << elemento.tempoDescida << " " << elemento.tempoLigada << " " << elemento.periodo << " " << elemento.numeroCiclos << endl;
 			}
 			else{
 				cout << "Tipo da fonte " << elemento.nome << " nao reconhecido." << endl;
@@ -167,6 +172,7 @@ void leituraNetlist(
 			netlist.pop_back();
 			num_elementos--;
 			input >> elemento.nome >> na >> nb >> elemento.valor; 	
+			cout << elemento.nome << " " << na << " " << nb << " " << elemento.valor;
 			elemento.a = numero(lista, na, num_variaveis);
 			elemento.b = numero(lista, nb, num_variaveis);
 			componentesVariantes.push_back(elemento);
@@ -188,6 +194,14 @@ void leituraNetlist(
       netlist[num_elementos].d=numero(lista, nd, num_variaveis);
 			//amp_ops.push_back(netlist[num_elementos]);
     }
+		else if (tipo=='K') {
+			input >> netlist[num_elementos].nome >> na >> nb >> nc >> nd >> netlist[num_elementos].valor;
+			cout << netlist[num_elementos].nome << " " << na << " " << nb << " " << nc << " " << nd << " " << netlist[num_elementos].valor << endl;
+			netlist[num_elementos].a = numero(lista, na, num_variaveis);
+			netlist[num_elementos].b = numero(lista, nb, num_variaveis);
+			netlist[num_elementos].c = numero(lista, nc, num_variaveis);
+			netlist[num_elementos].d = numero(lista, nd, num_variaveis);
+		}
     else if (tipo=='*') { /* Comentario comeca com "*" */
       cout << "Comentario: " << linha << endl;
 			netlist.pop_back();
@@ -214,7 +228,7 @@ void adicionarVariaveis(std::vector<std::string>& lista, std::vector<Elemento>& 
   num_nos=num_variaveis;
   for (i=1; i<=num_elementos; i++) {
     tipo=netlist[i].nome[0];
-    if (tipo=='V' || tipo=='E' || tipo=='F' || tipo=='O') {
+    if (tipo=='V' || tipo=='E' || tipo=='F' || tipo=='O' || tipo=='K') {
       num_variaveis++;
       /*if (num_variaveis>MAX_NOS) {
         cout << "As correntes extra excederam o numero de variaveis permitido (" << MAX_NOS << ")" << endl;
@@ -279,75 +293,87 @@ void montarSistemaDC(std::vector<Elemento>& netlist, std::vector< std::vector<lo
   }
 
   /* Monta estampas */
-  for (i=1; i<=num_elementos; i++) {
-    tipo=netlist[i].nome[0];
+  //for (i=1; i<=num_elementos; i++) {
+	for (auto &elemento: netlist){
+    tipo=elemento.nome[0];
     if (tipo=='R') {
-      g=1/netlist[i].valor;
-      Yn[netlist[i].a][netlist[i].a]+=g;
-      Yn[netlist[i].b][netlist[i].b]+=g;
-      Yn[netlist[i].a][netlist[i].b]-=g;
-      Yn[netlist[i].b][netlist[i].a]-=g;
+      g=1/elemento.valor;
+      Yn[elemento.a][elemento.a]+=g;
+      Yn[elemento.b][elemento.b]+=g;
+      Yn[elemento.a][elemento.b]-=g;
+      Yn[elemento.b][elemento.a]-=g;
     }
     else if (tipo=='G') {
-      g=netlist[i].valor;
-      Yn[netlist[i].a][netlist[i].c]+=g;
-      Yn[netlist[i].b][netlist[i].d]+=g;
-      Yn[netlist[i].a][netlist[i].d]-=g;
-      Yn[netlist[i].b][netlist[i].c]-=g;
+      g=elemento.valor;
+      Yn[elemento.a][elemento.c]+=g;
+      Yn[elemento.b][elemento.d]+=g;
+      Yn[elemento.a][elemento.d]-=g;
+      Yn[elemento.b][elemento.c]-=g;
     }
     else if (tipo=='I') {
-      g=netlist[i].valor;
-      Yn[netlist[i].a][num_variaveis+1]-=g;
-      Yn[netlist[i].b][num_variaveis+1]+=g;
+      g=elemento.valor;
+      Yn[elemento.a][num_variaveis+1]-=g;
+      Yn[elemento.b][num_variaveis+1]+=g;
     }
     else if (tipo=='V') {
-      Yn[netlist[i].a][netlist[i].x]+=1;
-      Yn[netlist[i].b][netlist[i].x]-=1;
-      Yn[netlist[i].x][netlist[i].a]-=1;
-      Yn[netlist[i].x][netlist[i].b]+=1;
-      Yn[netlist[i].x][num_variaveis+1]-=netlist[i].valor;
+      Yn[elemento.a][elemento.x]+=1;
+      Yn[elemento.b][elemento.x]-=1;
+      Yn[elemento.x][elemento.a]-=1;
+      Yn[elemento.x][elemento.b]+=1;
+      Yn[elemento.x][num_variaveis+1]-=elemento.valor;
     }
     else if (tipo=='E') {
-      g=netlist[i].valor;
-      Yn[netlist[i].a][netlist[i].x]+=1;
-      Yn[netlist[i].b][netlist[i].x]-=1;
-      Yn[netlist[i].x][netlist[i].a]-=1;
-      Yn[netlist[i].x][netlist[i].b]+=1;
-      Yn[netlist[i].x][netlist[i].c]+=g;
-      Yn[netlist[i].x][netlist[i].d]-=g;
+      g=elemento.valor;
+      Yn[elemento.a][elemento.x]+=1;
+      Yn[elemento.b][elemento.x]-=1;
+      Yn[elemento.x][elemento.a]-=1;
+      Yn[elemento.x][elemento.b]+=1;
+      Yn[elemento.x][elemento.c]+=g;
+      Yn[elemento.x][elemento.d]-=g;
     }
     else if (tipo=='F') {
-      g=netlist[i].valor;
-      Yn[netlist[i].a][netlist[i].x]+=g;
-      Yn[netlist[i].b][netlist[i].x]-=g;
-      Yn[netlist[i].c][netlist[i].x]+=1;
-      Yn[netlist[i].d][netlist[i].x]-=1;
-      Yn[netlist[i].x][netlist[i].c]-=1;
-      Yn[netlist[i].x][netlist[i].d]+=1;
+      g=elemento.valor;
+      Yn[elemento.a][elemento.x]+=g;
+      Yn[elemento.b][elemento.x]-=g;
+      Yn[elemento.c][elemento.x]+=1;
+      Yn[elemento.d][elemento.x]-=1;
+      Yn[elemento.x][elemento.c]-=1;
+      Yn[elemento.x][elemento.d]+=1;
     }
     else if (tipo=='H') {
-      g=netlist[i].valor;
-      Yn[netlist[i].a][netlist[i].y]+=1;
-      Yn[netlist[i].b][netlist[i].y]-=1;
-      Yn[netlist[i].c][netlist[i].x]+=1;
-      Yn[netlist[i].d][netlist[i].x]-=1;
-      Yn[netlist[i].y][netlist[i].a]-=1;
-      Yn[netlist[i].y][netlist[i].b]+=1;
-      Yn[netlist[i].x][netlist[i].c]-=1;
-      Yn[netlist[i].x][netlist[i].d]+=1;
-      Yn[netlist[i].y][netlist[i].x]+=g;
+      g=elemento.valor;
+      Yn[elemento.a][elemento.y]+=1;
+      Yn[elemento.b][elemento.y]-=1;
+      Yn[elemento.c][elemento.x]+=1;
+      Yn[elemento.d][elemento.x]-=1;
+      Yn[elemento.y][elemento.a]-=1;
+      Yn[elemento.y][elemento.b]+=1;
+      Yn[elemento.x][elemento.c]-=1;
+      Yn[elemento.x][elemento.d]+=1;
+      Yn[elemento.y][elemento.x]+=g;
     }
     else if (tipo=='O') {
-      Yn[netlist[i].a][netlist[i].x]+=1;
-      Yn[netlist[i].b][netlist[i].x]-=1;
-      Yn[netlist[i].x][netlist[i].c]+=1;
-      Yn[netlist[i].x][netlist[i].d]-=1;
+      Yn[elemento.a][elemento.x]+=1;
+      Yn[elemento.b][elemento.x]-=1;
+      Yn[elemento.x][elemento.c]+=1;
+      Yn[elemento.x][elemento.d]-=1;
     }
+		else if (tipo == 'K') {
+			Yn[elemento.a][elemento.x] -= elemento.valor;
+			Yn[elemento.b][elemento.x] += elemento.valor;
+			Yn[elemento.c][elemento.x] += 1;
+			Yn[elemento.d][elemento.x] -= 1;
+
+			Yn[elemento.x][elemento.a] += elemento.valor;
+			Yn[elemento.x][elemento.b] -= elemento.valor;
+			Yn[elemento.x][elemento.c] -= 1;
+			Yn[elemento.x][elemento.d] += 1;
+		}
 	
 	#ifdef DEBUG
 	/* Opcional: Mostra o sistema apos a montagem da estampa */
 		std::ostringstream msg;
-		msg <<  "Sistema apos a estampa de " << netlist[i].nome;
+		msg <<  "Sistema apos a estampa de " << elemento.nome;
 		mostrarSistema(msg.str(),Yn, num_variaveis);
 		std::cin.get();
 	#endif
@@ -413,7 +439,7 @@ void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>
 			sistema[componente.x][index]        += -G*V;
 		}
 		else if (tipo == 'L'){
-			long double G = 2*componente.valor/passo;
+			/*long double G = 2*componente.valor/passo;
 			long double I = solucao_anterior[componente.x] + passo/(2*componente.valor)*(solucao_anterior[componente.a] - solucao_anterior[componente.b]);  
 
 			sistema[componente.a][componente.a] += G;
@@ -426,7 +452,15 @@ void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>
 			sistema[componente.x][componente.a] += G;
 			sistema[componente.x][componente.b] -= G;
 			sistema[componente.x][componente.x] -= 1;
-			sistema[componente.x][index] -= I;
+			sistema[componente.x][index] -= I;*/
+
+			sistema[componente.a][componente.x] += 1;
+			sistema[componente.b][componente.x] -= 1;
+
+			sistema[componente.x][componente.a] -= 1;
+			sistema[componente.x][componente.b] += 1;
+			sistema[componente.x][componente.x] += 2*componente.valor/passo;
+			sistema[componente.x][index] += 2*componente.valor/passo * solucao_anterior[componente.x] + (solucao_anterior[componente.a] - solucao_anterior[componente.b]);
 		}
 		else if(tipo == 'V'){
 			if (componente.tipoFonte == "DC"){
@@ -519,7 +553,7 @@ int simulacaoTrapezios(
 		cout << "Calculando ponto de operacao" << endl;
 		cin.get();
 	#endif
-	vector<long double> solucao_anterior = resolverPontoOperacao(sistemaEsqueleto, componentesVariantes, num_variaveis);
+	vector<long double> solucao_anterior = resolverPontoOperacao(sistemaEsqueleto, componentesVariantes, num_variaveis, passo);
 	solucoes.push_back(solucao_anterior);
 	#ifdef DEBUG
 		cout << "Iniciando solucao por trapezios" << endl;
@@ -551,7 +585,7 @@ int simulacaoTrapezios(
 
 }
 
-std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long double>> sistema, std::vector<Elemento> componentesVariantes, int num_variaveis){
+std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long double>> sistema, std::vector<Elemento> componentesVariantes, int num_variaveis, double passo){
 	using namespace std;
 	vector<vector<long double>> Yn(num_variaveis+1, vector<long double>(num_variaveis+2));
 	Yn = sistema;
