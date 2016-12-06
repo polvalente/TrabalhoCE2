@@ -469,21 +469,6 @@ void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>
 			sistema[componente.x][index]        += -G*V;
 		}
 		else if (tipo == 'L'){
-			/*long double G = 2*componente.valor/passo;
-			long double I = solucao_anterior[componente.x] + passo/(2*componente.valor)*(solucao_anterior[componente.a] - solucao_anterior[componente.b]);  
-
-			sistema[componente.a][componente.a] += G;
-			sistema[componente.a][componente.b] -= G;
-			sistema[componente.b][componente.a] -= G;
-			sistema[componente.b][componente.b] += G;
-			sistema[componente.a][index] -= I;
-			sistema[componente.b][index] += I;
-
-			sistema[componente.x][componente.a] += G;
-			sistema[componente.x][componente.b] -= G;
-			sistema[componente.x][componente.x] -= 1;
-			sistema[componente.x][index] -= I;*/
-
 			sistema[componente.a][componente.x] += 1;
 			sistema[componente.b][componente.x] -= 1;
 
@@ -557,6 +542,8 @@ void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>
 std::vector<long double> resolverNewtonRaphson(std::vector<std::vector<long double> > sistemaInicial, std::vector<Elemento> componentesNaoLineares, std::vector<long double> solucao_inicial, int num_variaveis, bool& convergiu){
 	//Funcao que executa o algoritmo de newton raphson para resolucao do circuito
 	std::vector<long double> solucao = solucao_inicial;
+	if(componentesNaoLineares.size() == 0)
+		return resolverSistema(sistemaIncial, num_variaveis);
 	
 	convergiu = false;
 	for(unsigned iter = 0; iter < MAX_ITER; iter++){
@@ -623,7 +610,7 @@ int simulacaoTrapezios(
 	using namespace std;
 	bool convergiu;
 
-	adicionarVariaveisDinamicas(lista, componentesVariantes,componentesNaoLineares, num_variaveis, num_nos); 
+	adicionarVariaveisDinamicas(lista, componentesVariantes, componentesNaoLineares, num_variaveis, num_nos); 
 	
 	vector<vector<long double>> sistemaEsqueleto(num_variaveis+1, vector<long double>(num_variaveis+2));
 	montarSistemaDC(netlist, sistemaEsqueleto, num_variaveis, num_elementos);
