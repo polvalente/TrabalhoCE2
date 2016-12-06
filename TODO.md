@@ -8,8 +8,8 @@ _OK_ L - Indutor
 
 _OK_ K - Transformador Ideal
 
-D - Diodo ideal
-$ - Chave ideal
+_OK_ D - Diodo ideal
+_OK_ $ - Chave ideal
 
 _OK_ V - Fonte de tensao variante no tempo
 _OK_ I - Fonte de corrente variante no tempo
@@ -22,4 +22,13 @@ Para cada elemento adicionado:
 
 _FONTES VARIANTES NO TEMPO_: (falta lidar com o numero de ciclos)
 _LIDAR COM NUMERO DE PASSOS POR PONTO NA HORA DE RETORNAR O RESULTADO FINAL_
+
+______
+
+TESTAR FONTES VARIANTES NO TEMPO(NUMERO DE CICLOS)
+TESTAR DIODOS E CHAVES
+VERIFICAR SE PONTOS ESTAO SENDO PLOTADOS CORRETAMENTE
+
+
+
 

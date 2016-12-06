@@ -1,5 +1,6 @@
 /* Trabalho de Circuitos Eletricos II
- * Camyla Tsukuda Romao - 
+ * Alice Fontes - alicefontes@poli.ufrj.br
+ * Camyla Tsukuda Romao - camyla.romao@poli.ufrj.br
  * Paulo Oliveira Lenzi Valente - paulovalente@poli.ufrj.br
  * 
  * Baseado no programa mna1 (por Antonio Carlos M. de Queiroz - acmq@coe.ufrj.br)
@@ -21,6 +22,7 @@
  * */
 
 #include <iostream>
+#include <cstdlib>
 #include "constants.hpp"
 #include "functions.hpp"
 #include "classes.hpp"
@@ -38,21 +40,22 @@ int main(int argc, char** argv)
 	vector<string> lista; 
 	vector<Elemento> netlist(1);
 	vector<Elemento> componentesVariantes;
-	std::vector<std::vector<long double>> resultados;
+	vector<Elemento> componentesNaoLineares;
+	std::vector< std::vector<long double> > resultados;
   
 	cout << "Simulador construido para o trabalho de Circuitos Eletricos II\n\n" << endl;
 	cout << "Feito por: " << endl;
   cout << "Alice Fontes - alicefontes@poli.ufrj.br" << endl;
 	cout << "Camyla Tsukuda Romao - camyla.romao@poli.ufrj.br" << endl;
-	cout << "Paulo Oliveira Lenzi Valente - paulovalente@poli.ufrj.br\n" << endl;
+	cout << "Paulo Oliveira Lenzi Valente - paulovalente@poli.ufrj.br" << endl << endl;
 	cout << "Baseado no programa MNA1 - por Antonio Carlos M. de Queiroz - acmq@coe.ufrj.br\n"<< endl;
-  cout << "Versao " << versao << "\n\n" << endl;
+  cout << "Versao " << versao << endl << endl << endl;
 
   /* Leitura do netlist */
 	string nomeArquivo = "";
 	if (argc == 2)
 		nomeArquivo = argv[1];
-	leituraNetlist(lista, netlist, componentesVariantes, argc, nomeArquivo, num_elementos, num_variaveis, tempo_final, passo, metodo, passos_por_ponto);
+	leituraNetlist(lista, netlist, componentesVariantes, argc, nomeArquivo, num_elementos, num_variaveis, tempo_final, passo, metodo, passos_por_ponto, componentesNaoLineares);
 	if (componentesVariantes.size() > 0) metodo = "TRAP";
 
   /* Acrescenta variaveis de corrente acima dos nos, anotando no netlist */
@@ -61,13 +64,13 @@ int main(int argc, char** argv)
 
   
 	
-	vector<vector<long double>> Yn(num_variaveis+1, vector<long double>(num_variaveis+2));
+	vector< vector<long double> > Yn(num_variaveis+1, vector<long double>(num_variaveis+2));
 #ifdef DEBUG
 	cout << "Metodo de simulacao: " << metodo << endl;
 #endif
 
 	if (metodo == "TRAP"){
-		simulacaoTrapezios(netlist, componentesVariantes, lista, num_elementos, num_nos, num_variaveis, passo, tempo_final, passos_por_ponto, resultados);
+		simulacaoTrapezios(netlist, componentesVariantes, lista, num_elementos, num_nos, num_variaveis, passo, tempo_final, passos_por_ponto, resultados, componentesNaoLineares);
 		escreverResultadosNoArquivo(nomeArquivo, resultados, passo, tempo_final, passos_por_ponto, lista);
 	}
 	else{ /* DC */

@@ -2,6 +2,8 @@
 #define _CLASSES_CE2_
 #include <string>
 #include <vector>
+#include <cmath>
+
 //Definicoes de classe
 using std::string;
 class Elemento{
@@ -33,5 +35,7 @@ class Elemento{
 		Elemento();
     double valorFonteSenoidal(double);
     double valorFontePulse(double,double);
+    //double pi = 4 * std::atan(1);
+    double pi = 3.1415926535897;
 };
 #endif

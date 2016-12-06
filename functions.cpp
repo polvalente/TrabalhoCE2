@@ -5,6 +5,7 @@
 #include <fstream>
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 
 #include "classes.hpp"
 #include "functions.hpp"
@@ -87,7 +88,8 @@ void leituraNetlist(
 		double& tempo_final,
 		double& passo,
 		std::string& metodo,
-		unsigned& passos_por_ponto){
+		unsigned& passos_por_ponto,
+		std::vector<Elemento>& componentesNaoLineares){
 		//std::vector<Elemento>& amp_ops){
 	
 	using namespace std;
@@ -141,6 +143,25 @@ void leituraNetlist(
       netlist[num_elementos].a=numero(lista, na, num_variaveis);
       netlist[num_elementos].b=numero(lista, nb, num_variaveis);
     }
+		else if (tipo == 'D' || tipo == '$'){
+			num_elementos--;
+			netlist.pop_back();
+			input >> elemento.nome >> na >> nb;
+			elemento.a = numero(lista, na, num_variaveis);
+			elemento.b = numero(lista, nb, num_variaveis);
+			cout << elemento.nome << " " << na << " " << nb << " ";
+			if(tipo == '$'){
+				input >> nc >> nd >> elemento.valor;
+				elemento.c = numero(lista, nc, num_variaveis);
+				elemento.d = numero(lista, nd, num_variaveis);
+				cout << nc << " " << nd << " " << elemento.valor;
+			}
+			else{
+				elemento.valor = 0;
+			}
+			cout << endl;
+			componentesNaoLineares.push_back(elemento);
+		}
 		else if (tipo == 'I' || tipo == 'V'){
 			num_elementos--;
 			netlist.pop_back();
@@ -386,14 +407,15 @@ void mostrarSistema(std::string msg, std::vector<std::vector<long double>> Yn, i
 
   for (int i=1; i<=num_variaveis; i++) {
       for (int j=1; j<=num_variaveis+1; j++)
-        if ( (Yn[i][j]!=0) || (j == num_variaveis+1)) 
-					printf("%+3.1Lf ",Yn[i][j]);
+        if ( (Yn[i][j]!=0) || (j == num_variaveis+1)){
+					printf("%+3.1f ",(float) Yn[i][j]);
+				}
         else printf(" ... ");
 			std::cout << std::endl;
     }
 }
 
-void adicionarVariaveisDinamicas(std::vector<std::string>& lista, std::vector<Elemento>& componentesVariantes, int& num_variaveis, int& num_nos){
+void adicionarVariaveisDinamicas(std::vector<std::string>& lista, std::vector<Elemento>& componentesVariantes, std::vector<Elemento>& componentesNaoLineares, int& num_variaveis, int& num_nos){
 	char tipo;
 
   num_nos=num_variaveis;
@@ -410,6 +432,14 @@ void adicionarVariaveisDinamicas(std::vector<std::string>& lista, std::vector<El
 			componente.x = num_variaveis;
 		}
   }
+
+	for(auto &componente: componentesNaoLineares){
+		if (tipo == 'D' || tipo == '$'){
+			num_variaveis++;
+			lista.push_back("j"+componente.nome);
+			componente.x = num_variaveis;
+		}
+	}
 }
 
 void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>& sistema, std::vector<Elemento> componentesVariantes, std::vector<long double> solucao_anterior, double passo, double t){
@@ -524,6 +554,54 @@ void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>
 
 }
 
+std::vector<long double> resolverNewtonRaphson(std::vector<std::vector<long double> > sistemaInicial, std::vector<Elemento> componentesNaoLineares, std::vector<long double> solucao_inicial, int num_variaveis, bool& convergiu){
+	//Funcao que executa o algoritmo de newton raphson para resolucao do circuito
+	std::vector<long double> solucao = solucao_inicial;
+	
+	convergiu = false;
+	for(unsigned iter = 0; iter < MAX_ITER; iter++){
+
+		std::vector<long double> solucao_anterior = solucao;
+		std::vector<std::vector<long double>> sistema = sistemaInicial;
+		for(auto &componente: componentesNaoLineares){
+			char tipo = componente.nome[0];
+			if (tipo == 'D' || tipo == '$'){
+				long double v = (tipo == 'D') ? solucao_anterior[componente.a] - solucao_anterior[componente.b] : solucao_anterior[componente.c] - solucao_anterior[componente.d]; 
+				long double limite = componente.valor;
+				if (v > limite){
+					//estampa curto: fonte de tensao = 0
+					sistema[componente.a][componente.x] += 1;
+					sistema[componente.b][componente.x] -= 1;
+					sistema[componente.x][componente.a] -= 1;				
+					sistema[componente.x][componente.b] += 1;				
+					sistema[componente.x][num_variaveis+1] -= 0;				
+				}
+				else{
+					//estampa aberto: fonte de corrente = 0
+					sistema[componente.a][num_variaveis+1] -= 0;
+					sistema[componente.b][num_variaveis+1] += 0;
+					sistema[componente.x][componente.x]		 += 1;
+					sistema[componente.x][num_variaveis+1] += 0;
+				}
+			}
+		}
+		resolverSistema(sistema, num_variaveis);
+		bool convergiuTodas = true;
+		for(int i = 0; i < num_variaveis+1; i++){
+			solucao[i] = sistema[i][sistema[i].size()-1];
+
+			if(std::abs(solucao_anterior[i] - solucao[i]) > NR_CONVERGENCIA){
+				convergiuTodas = false;
+			}
+		}
+		if(convergiuTodas){
+			convergiu = true;
+			break;
+		}
+	}
+	return solucao;
+}
+
 int simulacaoTrapezios(
 		std::vector<Elemento> netlist, 
 		std::vector<Elemento> componentesVariantes, 
@@ -534,7 +612,8 @@ int simulacaoTrapezios(
 		double passo, 
 		double tempo_final, 
 		unsigned passos_por_ponto,
-		std::vector<std::vector<long double>>& solucoes){
+		std::vector<std::vector<long double>>& solucoes,
+		std::vector<Elemento> componentesNaoLineares){
 	//	std::vector<Elemento>& amp_ops){
 	// montar sistema dc
 	// a cada iteracao:
@@ -542,7 +621,9 @@ int simulacaoTrapezios(
 	//   resolve o sistema nodal
 	//   guarda a solucao da iteracao na linha de uma matriz
 	using namespace std;
-	adicionarVariaveisDinamicas(lista, componentesVariantes, num_variaveis, num_nos); 
+	bool convergiu;
+
+	adicionarVariaveisDinamicas(lista, componentesVariantes,componentesNaoLineares, num_variaveis, num_nos); 
 	
 	vector<vector<long double>> sistemaEsqueleto(num_variaveis+1, vector<long double>(num_variaveis+2));
 	montarSistemaDC(netlist, sistemaEsqueleto, num_variaveis, num_elementos);
@@ -553,7 +634,9 @@ int simulacaoTrapezios(
 		cout << "Calculando ponto de operacao" << endl;
 		cin.get();
 	#endif
-	vector<long double> solucao_anterior = resolverPontoOperacao(sistemaEsqueleto, componentesVariantes, num_variaveis, passo);
+	vector<long double> solucao_anterior = resolverPontoOperacao(sistemaEsqueleto, componentesVariantes, num_variaveis, passo, componentesNaoLineares, convergiu);
+	if(!convergiu)
+		return ERRO_CONVERGENCIA;
 	solucoes.push_back(solucao_anterior);
 	#ifdef DEBUG
 		cout << "Iniciando solucao por trapezios" << endl;
@@ -572,20 +655,26 @@ int simulacaoTrapezios(
 		#endif
 		sistemaCompleto = sistemaEsqueleto;			
 		adicionarEstampasComponentesVariantes(sistemaCompleto, componentesVariantes, solucao_anterior, passo/passos_por_ponto, t0);
-		resolverSistema(sistemaCompleto, num_variaveis);
-		vector<long double> solucao(num_variaveis+2);
+		//resolverSistema(sistemaCompleto, num_variaveis);
+		vector<long double> solucao = resolverNewtonRaphson(sistemaCompleto, componentesNaoLineares, solucoes[solucoes.size()-1], num_variaveis, convergiu);
+		if(!convergiu){
+			return ERRO_CONVERGENCIA;
+		}
+		solucoes.push_back(solucao);
+		/*vector<long double> solucao(num_variaveis+2);
 		for (int i=0; i<num_variaveis+1; i++)
 			solucao[i] = sistemaCompleto[i][num_variaveis+1];
 		//solucao[0] = 0.0;
 		solucao_anterior = solucao;
 		solucoes.push_back(solucao);
+		*/
 	}
 	
 	return OK;
 
 }
 
-std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long double>> sistema, std::vector<Elemento> componentesVariantes, int num_variaveis, double passo){
+std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long double>> sistema, std::vector<Elemento> componentesVariantes, int num_variaveis, double passo, std::vector<Elemento> componentesNaoLineares, bool& convergiu){
 	using namespace std;
 	vector<vector<long double>> Yn(num_variaveis+1, vector<long double>(num_variaveis+2));
 	Yn = sistema;
@@ -675,10 +764,11 @@ std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long doub
 	cin.get();
 #endif
 	
-	resolverSistema(Yn, num_variaveis);
-	vector<long double> solucao(num_variaveis+1);
+	//resolverSistema(Yn, num_variaveis);
+	vector<long double> solucao_anterior(num_variaveis+1);
 	for (int i=0; i<num_variaveis+1; i++)
-		solucao[i] = Yn[i][num_variaveis+1];
+		solucao_anterior[i] = 0;
+	std::vector<long double> solucao = resolverNewtonRaphson(Yn, componentesNaoLineares, solucao_anterior, num_variaveis, convergiu);
 	return solucao;
 }
 
@@ -839,11 +929,12 @@ void escreverResultadosNoArquivo(
 
 	arquivoSaida.open(nomeArquivoSaida);
 	arquivoSaida << "t ";
-	for(auto &variavel: lista){
-		arquivoSaida << variavel;
+	for(unsigned index = 0; index < lista.size()-1; index++){//auto &variavel: lista){
+		arquivoSaida << lista[index];
 		//if (variavel != lista[lista.size()-1])
 			arquivoSaida << " ";
 	}
+	arquivoSaida << lista[lista.size()-1];
 	arquivoSaida << "\n";
 
 	double tempo = -passo;
@@ -857,13 +948,14 @@ void escreverResultadosNoArquivo(
 		tempo += passo;
 		arquivoSaida << tempo << " ";
 		int ii = 0;
-		for(unsigned index_solucao = 0; index_solucao < lista.size(); index_solucao++){
+		for(unsigned index_solucao = 0; index_solucao < lista.size()-1; index_solucao++){
 			arquivoSaida << solucao[index_solucao];
 			//std::cout << lista[ii] << ": "<< solucao[index_solucao] << std::endl;
 			ii++;
 			//if (val != solucao[solucao.size()-1])
 				arquivoSaida << " ";
 		}
+		arquivoSaida << solucao[lista.size()-1];
 		arquivoSaida << "\n";
 	}
 	arquivoSaida.close();
