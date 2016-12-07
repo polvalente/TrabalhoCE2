@@ -32,8 +32,8 @@ int main(int argc, char** argv)
 	using namespace std;
 	int num_nos, num_variaveis, num_elementos;
 	string metodo = "DC";
-	double passo = 0.1;
-	double tempo_final = 1.0;
+	double passo = 0;
+	double tempo_final = 0;
 	unsigned passos_por_ponto = 1;
 
 
@@ -56,7 +56,7 @@ int main(int argc, char** argv)
 	if (argc == 2)
 		nomeArquivo = argv[1];
 	leituraNetlist(lista, netlist, componentesVariantes, argc, nomeArquivo, num_elementos, num_variaveis, tempo_final, passo, metodo, passos_por_ponto, componentesNaoLineares);
-	if (componentesVariantes.size() > 0) metodo = "TRAP";
+	//if (componentesVariantes.size() > 0) metodo = "TRAP";
 
   /* Acrescenta variaveis de corrente acima dos nos, anotando no netlist */
 	adicionarVariaveis(lista, netlist, num_variaveis, num_nos, num_elementos);
@@ -64,7 +64,6 @@ int main(int argc, char** argv)
 
   
 	
-	vector< vector<long double> > Yn(num_variaveis+1, vector<long double>(num_variaveis+2));
 #ifdef DEBUG
 	cout << "Metodo de simulacao: " << metodo << endl;
 #endif
@@ -74,34 +73,51 @@ int main(int argc, char** argv)
 		escreverResultadosNoArquivo(nomeArquivo, resultados, passo, tempo_final, passos_por_ponto, lista);
 	}
 	else{ /* DC */
+		passo = 1;
+		tempo_final = 0;
+		passos_por_ponto = 1;
+		simulacaoTrapezios(netlist, componentesVariantes, lista, num_elementos, num_nos, num_variaveis, passo, tempo_final, passos_por_ponto, resultados, componentesNaoLineares);
+		escreverResultadosNoArquivo(nomeArquivo, resultados, passo, tempo_final, passos_por_ponto, lista);
+
 		/* Lista tudo */
+		/*adicionarVariaveisDinamicas(lista, componentesVariantes, componentesNaoLineares, num_variaveis, num_nos);
+		vector< vector<long double> > Yn(num_variaveis+1, vector<long double>(num_variaveis+2));
 		listarVariaveis(lista, num_variaveis);
 		cin.get();
 
 		mostrarNetlist(netlist, num_elementos);
 		cin.get();
-		/* Monta o sistema nodal modificado */
+		* Monta o sistema nodal modificado *
 		cout << "O circuito tem " << num_nos << " nos, " << num_variaveis << " variaveis e " << num_elementos << " elementos" << endl;
 		cin.get();
 		montarSistemaDC(netlist, Yn, num_variaveis, num_elementos);
-		/* Resolve o sistema */
-		if (resolverSistema(Yn, num_variaveis)) {
+		* Resolve o sistema *
+		//if (resolverSistema(Yn, num_variaveis)) {
+		bool convergiu;
+		resolverNewtonRaphson(Yn, componentesNaoLineares, num_variaveis, convergiu);
+		if(!convergiu){
 			cin.get();
-			exit(ERRO_RESOLUCAO_SISTEMA);
+			exit(ERRO_CONVERGENCIA);
 		}
 		#ifdef DEBUG
-			/*Opcional: Mostra o sistemar resolvido*/
+			*Opcional: Mostra o sistemar resolvido*
 			mostrarSistema("Sistema resolvido: ", Yn, num_variaveis);
 			cin.get();
 		#endif
-		/* Mostra solucao */
+		* Mostra solucao *
 		cout << "Solucao:" << endl;
 		string txt = "Tensao";
+		std::vector<long double> solucao(num_variaveis+1);
+		solucao[0] = 0;
 		for (int i=1; i<=num_variaveis; i++) {
 			if (i==num_nos+1) txt = "Corrente";
-			cout << txt << " " << lista[i] << ": " << Yn[i][num_variaveis+1] << endl;
+			solucao[i] = Yn[i][num_variaveis+1];
+			cout << txt << " " << lista[i] << ": " << solucao[i] << endl;
 		}
 		cin.get();
+		std::vector<std::vector<long double> > solucoes;
+		solucoes.push_back(solucao);
+		escreverResultadosNoArquivo(nomeArquivo, solucoes, 0, 0, 1, lista);*/
 	}
   return OK;
 }

@@ -21,13 +21,10 @@ double Elemento::valorFonteSenoidal(double t){
 }
 
 double Elemento::valorFontePulse(double t, double passo){
-	double tempo = fmod((t-atraso),periodo);
 
-	//fonte ainda nao ligou
-	if (t < atraso)
-		return amplitude;
 	//fonte deve ser desligada, parando aonde estava
-	if (t > (atraso + numeroCiclos * periodo)){
+	double tempo = fmod((t-atraso),periodo);
+	if (t >= (atraso + numeroCiclos * periodo)){
 		tempo = atraso + numeroCiclos*periodo;
 	}
 	if (tempoDescida == 0){
@@ -36,7 +33,10 @@ double Elemento::valorFontePulse(double t, double passo){
 	if (tempoSubida == 0){
 		tempoSubida = passo;
 	}
-	else if ((tempo >= atraso) && (tempo < (atraso + tempoSubida))){
+	//fonte ainda nao ligou
+	if (tempo < atraso){
+		return amplitude;
+	}else if ((tempo >= atraso) && (tempo < (atraso + tempoSubida))){
 		double a = (amplitude2 - amplitude)/tempoSubida;
 		double b = amplitude - atraso*a;
 		return tempo*a + b;

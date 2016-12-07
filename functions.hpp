@@ -32,7 +32,7 @@ void montarSistemaDC(std::vector<Elemento>&, std::vector< std::vector<long doubl
 void mostrarSistema(std::string, std::vector<std::vector<long double> >, int);
 //int simulacaoTrapezios(std::vector<Elemento>, std::vector<Elemento>, std::vector<std::string>&, int, int, int&, double, double, double, std::vector<Elemento>&);
 int simulacaoTrapezios(std::vector<Elemento>, std::vector<Elemento>, std::vector<std::string>&, int, int, int&, double, double, unsigned, std::vector<std::vector<long double> >&, std::vector<Elemento>);
-void adicionarVariaveisDinamicas(std::vector<std::string>&, std::vector<Elemento>&, int&, int&);
+void adicionarVariaveisDinamicas(std::vector<std::string>&, std::vector<Elemento>&, std::vector<Elemento>&, int&, int&);
 std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long double> >, std::vector<Elemento>, int, double, std::vector<Elemento>, bool&); 
 
 void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double> >&, std::vector<Elemento>, std::vector<long double>, double, double); 
@@ -45,4 +45,16 @@ std::vector<std::vector<std::string>> condensarColunas(std::vector<std::vector<l
 
 void escreverResultadosNoArquivo(std::string, std::vector<std::vector<long double> >, double, double, unsigned, std::vector<std::string>);
 
+std::vector<long double> resolverNewtonRaphson(
+        std::vector<std::vector<long double>>,
+        std::vector<Elemento>,
+        int,
+        bool&);
+
+std::vector<long double> resolverNewtonRaphson(
+        std::vector<std::vector<long double>>,
+        std::vector<Elemento>,
+        std::vector<long double>,
+        int,
+        bool&);
 #endif

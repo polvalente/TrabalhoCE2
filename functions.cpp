@@ -233,6 +233,10 @@ void leituraNetlist(
 			num_elementos--;
 			string temp;
 			input >> temp >> tempo_final >> passo >> metodo >> passos_por_ponto; 
+			cout << "Tempo final: "<< tempo_final << endl;
+			cout << "Passo: " << passo << endl;
+			cout << "Metodo: " << metodo << endl;
+			cout << "Passos por ponto: " << passos_por_ponto << endl;
 		}
     else {
       cout << "Elemento desconhecido: " << linha << endl;
@@ -434,12 +438,18 @@ void adicionarVariaveisDinamicas(std::vector<std::string>& lista, std::vector<El
   }
 
 	for(auto &componente: componentesNaoLineares){
+		tipo = componente.nome[0];
 		if (tipo == 'D' || tipo == '$'){
 			num_variaveis++;
 			lista.push_back("j"+componente.nome);
 			componente.x = num_variaveis;
 		}
 	}
+
+	#ifdef DEBUG
+	//for(auto &var: lista)
+	//	std::cout << var << std::endl;
+	#endif
 }
 
 void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>& sistema, std::vector<Elemento> componentesVariantes, std::vector<long double> solucao_anterior, double passo, double t){
@@ -539,15 +549,40 @@ void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>
 
 }
 
+std::vector<long double> resolverNewtonRaphson(std::vector<std::vector<long double> > sistemaInicial, std::vector<Elemento> componentesNaoLineares, int num_variaveis, bool& convergiu){
+	std::vector<long double> solucao_inicial(num_variaveis+1);
+	for(int i = 0; i <= num_variaveis; i++)
+		solucao_inicial[i] = 0;
+	return resolverNewtonRaphson(sistemaInicial, componentesNaoLineares,solucao_inicial, num_variaveis, convergiu);
+}
+
 std::vector<long double> resolverNewtonRaphson(std::vector<std::vector<long double> > sistemaInicial, std::vector<Elemento> componentesNaoLineares, std::vector<long double> solucao_inicial, int num_variaveis, bool& convergiu){
 	//Funcao que executa o algoritmo de newton raphson para resolucao do circuito
+  #ifdef DEBUG
+		using namespace std;
+		cout << "Entrou NR" << endl;
+  #endif
 	std::vector<long double> solucao = solucao_inicial;
-	if(componentesNaoLineares.size() == 0)
-		return resolverSistema(sistemaIncial, num_variaveis);
+	if(componentesNaoLineares.size() == 0){
+		std::vector<std::vector<long double> > sistema = sistemaInicial;
+		int nv = num_variaveis;
+		resolverSistema(sistema, nv);
+		for(int i = 0; i <= nv; i++)
+			solucao[i] = sistema[i][sistema[i].size()-1];
+		convergiu = true;
+			
+		return solucao;
+	}
 	
 	convergiu = false;
+	#ifdef DEBUG
+		cout << "Antes de comecar iteracoes" << endl;
+	#endif
 	for(unsigned iter = 0; iter < MAX_ITER; iter++){
 
+    #ifdef DEBUG
+	    cout << "Iteracao: " << iter << endl;
+    #endif
 		std::vector<long double> solucao_anterior = solucao;
 		std::vector<std::vector<long double>> sistema = sistemaInicial;
 		for(auto &componente: componentesNaoLineares){
@@ -555,7 +590,20 @@ std::vector<long double> resolverNewtonRaphson(std::vector<std::vector<long doub
 			if (tipo == 'D' || tipo == '$'){
 				long double v = (tipo == 'D') ? solucao_anterior[componente.a] - solucao_anterior[componente.b] : solucao_anterior[componente.c] - solucao_anterior[componente.d]; 
 				long double limite = componente.valor;
-				if (v > limite){
+
+				#ifdef DEBUG
+					cout << "V: " << v << endl << "limite: " << limite << endl;
+					cout << "a: " << componente.a << endl;
+					cout << "b: " << componente.b << endl;
+					cout << "c: " << componente.c << endl;
+					cout << "d: " << componente.d << endl;
+					cout << "x: " << componente.x << endl;
+					cout << "linhas: " << sistema.size() << endl;
+					cout << "colunas: " << sistema[0].size() << endl;
+					cout << "nv+1: " << num_variaveis+1 << endl;
+					cout << endl << endl;
+				#endif
+				if (v >= limite){
 					//estampa curto: fonte de tensao = 0
 					sistema[componente.a][componente.x] += 1;
 					sistema[componente.b][componente.x] -= 1;
@@ -571,6 +619,10 @@ std::vector<long double> resolverNewtonRaphson(std::vector<std::vector<long doub
 					sistema[componente.x][num_variaveis+1] += 0;
 				}
 			}
+			#ifdef DEBUG
+			cout << "sistema apos estampa de: " << componente.nome <<endl;
+			mostrarSistema("", sistema, num_variaveis);
+			#endif
 		}
 		resolverSistema(sistema, num_variaveis);
 		bool convergiuTodas = true;
@@ -642,9 +694,16 @@ int simulacaoTrapezios(
 		#endif
 		sistemaCompleto = sistemaEsqueleto;			
 		adicionarEstampasComponentesVariantes(sistemaCompleto, componentesVariantes, solucao_anterior, passo/passos_por_ponto, t0);
+		#ifdef DEBUG
+			mostrarSistema("Sistema com estampas lineares:", sistemaCompleto, num_variaveis);
+			cin.get();
+		#endif
 		//resolverSistema(sistemaCompleto, num_variaveis);
 		vector<long double> solucao = resolverNewtonRaphson(sistemaCompleto, componentesNaoLineares, solucoes[solucoes.size()-1], num_variaveis, convergiu);
 		if(!convergiu){
+			#ifdef DEBUG
+				cout << "Erro de convergencia: " << endl;
+			#endif
 			return ERRO_CONVERGENCIA;
 		}
 		solucoes.push_back(solucao);
