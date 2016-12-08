@@ -14,6 +14,10 @@ OBJS=${SRCS:.cpp=.o}
 debug: 
 	${CPP_C} ${CPP_FLAGS} -DDEBUG -c main.cpp
 	${CPP_C} ${CPP_FLAGS} -DDEBUG -c functions.cpp
+	${CPP_C} ${CPP_FLAGS} -DDEBUG -c classes.cpp
+	make build
+class: 
+	${CPP_C} ${CPP_FLAGS} -DDEBUG -c classes.cpp
 	make build
 
 build: ${OBJS} 

@@ -20,4 +20,5 @@
 #define ERRO_NUM_VARIAVEIS	    4 
 #define ERRO_NUM_ELEMENTOS	    5
 #define ERRO_CONVERGENCIA           6
+#define ERRO_FONTE_PULSE            7
 #endif

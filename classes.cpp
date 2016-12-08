@@ -1,6 +1,11 @@
 #include "classes.hpp"
+#include "constants.hpp"
 #include <cmath>
 
+
+#ifdef DEBUG
+#include <iostream>
+#endif
 
 Elemento::Elemento(void){
 }
@@ -21,31 +26,40 @@ double Elemento::valorFonteSenoidal(double t){
 }
 
 double Elemento::valorFontePulse(double t, double passo){
+	//fonte desligada antes de t = atraso
+	tempoSubida = (tempoSubida == 0) ? passo : tempoSubida;
+	tempoDescida = (tempoDescida == 0) ? passo : tempoDescida;
 
-	//fonte deve ser desligada, parando aonde estava
-	double tempo = fmod((t-atraso),periodo);
-	if (t >= (atraso + numeroCiclos * periodo)){
-		tempo = atraso + numeroCiclos*periodo;
-	}
-	if (tempoDescida == 0){
-		tempoDescida = passo;
-	}
-	if (tempoSubida == 0){
-		tempoSubida = passo;
-	}
-	//fonte ainda nao ligou
-	if (tempo < atraso){
+	
+	if (t > (atraso + periodo * numeroCiclos))
+		t = atraso + periodo * numeroCiclos;
+	double tempo = fmod(t-atraso,periodo);
+	//fonte para onde estiver apos n ciclos
+	
+	if (t < atraso)
 		return amplitude;
-	}else if ((tempo >= atraso) && (tempo < (atraso + tempoSubida))){
+
+	//fonte subindo de tempo = atraso ate tempo = atraso + tempoSubida
+	if (tempo < (tempoSubida)){
 		double a = (amplitude2 - amplitude)/tempoSubida;
-		double b = amplitude - atraso*a;
-		return tempo*a + b;
-	}
-	else if ((tempo >= (atraso + tempoSubida)) && (tempo < (periodo - tempoDescida))){
-	//constante em amp2
+		double b = amplitude;
+		return a * tempo + b;
+	} 
+	//fonte parada em amplitude2 de tempo = atraso + tempoSubida ate tempo = atraso + tempoSubida + tempo ligada
+	else if (tempo < (tempoSubida + tempoLigada)){
 		return amplitude2;
 	}
-	
-	//decaindo de amp2 a amp1
-	return amplitude2 + (amplitude - amplitude2)/tempoDescida * (tempo - (atraso + tempoSubida+ tempoLigada));
+	//fonte descendo de tempo = atraso + tempoSubida + tempoLigada ate tempo = atraso + tempoSubida + tempoLigada + tempoDescida
+	else if (tempo < (tempoSubida + tempoLigada + tempoDescida)){
+		double a = (amplitude - amplitude2)/tempoDescida;
+		double b = amplitude2 - a*(tempoSubida + tempoLigada);
+		return a*tempo + b;
+	}
+	//fonte desligada de tempo = atraso + tempoSubida + tempoLigada + tempoDescida ate tempo = periodo
+	else if (tempo < (periodo)){
+		return amplitude;
+	}
+	//caso de erro, retorna a amplitude da fonte desligada
+	exit(ERRO_FONTE_PULSE);
+	return 0;
 }
