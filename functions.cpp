@@ -10,11 +10,6 @@
 #include "functions.hpp"
 #include "constants.hpp"
 
-//int
-//  num_elementos, /* Elementos */
-//  num_variaveis, /* Variaveis */
-//  num_nos; /* Nos */
-
 /* Resolucao de sistema de equacoes lineares.
    Metodo de Gauss-Jordan com condensacao pivotal */
 int resolverSistema(std::vector< std::vector<long double>>& Yn, int& num_variaveis){
@@ -82,12 +77,12 @@ void leituraNetlist(
 		std::vector<Elemento>& componentesVariantes, 
 		int argc, 
 		std::string& nomeArquivo,  
-		int& num_elementos, 
 		int& num_variaveis,
 		double& tempo_final,
 		double& passo,
 		std::string& metodo,
-		unsigned& passos_por_ponto){
+		unsigned& passos_por_ponto,
+		std::vector<Elemento>& componentesNaoLineares){
 		//std::vector<Elemento>& amp_ops){
 	
 	using namespace std;
@@ -95,6 +90,7 @@ void leituraNetlist(
 	FILE *arquivo = NULL;
 	char tipo;
 	string na,nb,nc,nd;
+	int num_elementos=0;
 
 	if (argc == 2){
 		arquivo = fopen(nomeArquivo.c_str(), "r");
@@ -112,7 +108,6 @@ void leituraNetlist(
   cout << "Lendo netlist" << endl;
 	
 	ifstream input_file(nomeArquivo);
-	num_elementos=0;
 	num_variaveis=0;
 	lista.push_back("0");
   
@@ -125,11 +120,6 @@ void leituraNetlist(
     num_elementos++; /* Nao usa o netlist[0] */
 		netlist.push_back(elemento);
 
-    /*if (num_elementos>MAX_ELEM) {
-      cout << "O programa so aceita ate " << MAX_ELEM << " elementos" << endl;
-      exit(ERRO_NUM_ELEMENTOS);
-    }*/
-
     linha[0]=toupper(linha[0]);
     tipo=linha[0];
 
@@ -141,6 +131,22 @@ void leituraNetlist(
       netlist[num_elementos].a=numero(lista, na, num_variaveis);
       netlist[num_elementos].b=numero(lista, nb, num_variaveis);
     }
+		else if (tipo == 'D' || tipo == '$'){
+			num_elementos--;
+			netlist.pop_back();
+			if (tipo == 'D'){
+				input >> elemento.nome >> na >> nb;
+				elemento.valor = 0;
+			}	
+			else{
+				input >> elemento.nome >> na >> nb >> nc >> nd >> elemento.valor;
+				elemento.c = numero(lista, nc, num_variaveis);
+				elemento.d = numero(lista, nd, num_variaveis);
+			}
+			elemento.a = numero(lista, na, num_variaveis);
+			elemento.b = numero(lista, nb, num_variaveis);
+			componentesNaoLineares.push_back(elemento);
+		}
 		else if (tipo == 'I' || tipo == 'V'){
 			num_elementos--;
 			netlist.pop_back();
@@ -221,32 +227,32 @@ void leituraNetlist(
   }
 }
 
-void adicionarVariaveis(std::vector<std::string>& lista, std::vector<Elemento>& netlist, int& num_variaveis, int& num_nos, int& num_elementos){
-	int i;
+void adicionarVariaveis(std::vector<std::string>& lista, std::vector<Elemento>& netlist, int& num_variaveis, int& num_nos){
 	char tipo;
 
   num_nos=num_variaveis;
-  for (i=1; i<=num_elementos; i++) {
-    tipo=netlist[i].nome[0];
-    if (tipo=='V' || tipo=='E' || tipo=='F' || tipo=='O' || tipo=='K') {
+  for (auto &componente: netlist) {
+    tipo=componente.nome[0];
+    if (tipo=='V' || 
+				tipo=='E' || 
+				tipo=='F' || 
+				tipo=='O' || 
+				tipo=='K' || 
+				tipo=='C' || 
+				tipo=='L' ||
+				tipo=='D' || 
+				tipo=='$') 
+		{
       num_variaveis++;
-      /*if (num_variaveis>MAX_NOS) {
-        cout << "As correntes extra excederam o numero de variaveis permitido (" << MAX_NOS << ")" << endl;
-        exit(ERRO_NUM_VARIAVEIS);
-      }*/
-      lista.push_back("j"+netlist[i].nome);
-      netlist[i].x=num_variaveis;
+      lista.push_back("j"+componente.nome);
+      componente.x=num_variaveis;
     }
     else if (tipo=='H') {
       num_variaveis+=2;
-      /*if (num_variaveis>MAX_NOS) {
-				std::cout << "As correntes extra excederam o numero de variaveis permitido (" << MAX_NOS << ")" << std::endl;
-        exit(ERRO_NUM_VARIAVEIS);
-      }*/
-      lista.push_back("jx"+netlist[i].nome);
-      netlist[i].x=num_variaveis-1;
-      lista.push_back("jy"+netlist[i].nome);
-      netlist[i].y=num_variaveis;
+      lista.push_back("jx"+componente.nome);
+      componente.x=num_variaveis-1;
+      lista.push_back("jy"+componente.nome);
+      componente.y=num_variaveis;
     }
   }
 }
@@ -257,13 +263,13 @@ void listarVariaveis(std::vector<std::string> lista, int num_variaveis){
 		std::cout << i << " -> " << lista[i] << std::endl;
 }
 
-void mostrarNetlist(std::vector<Elemento> netlist, int num_elementos){
+void mostrarNetlist(std::vector<Elemento> netlist){
 	using namespace std;
 	char tipo;
-	int i;
+	unsigned i;
 
 	cout << "Netlist interno final" << endl;
-		for (i=1; i<=num_elementos; i++) {
+		for (i=1; i<=(netlist.size()-1); i++) {
 			tipo=netlist[i].nome[0];
 			if (tipo=='R' || tipo=='I' || tipo=='V') {
 				cout << netlist[i].nome << " " << netlist[i].a << " " << netlist[i].b << " " << netlist[i].valor << endl;
@@ -281,7 +287,7 @@ void mostrarNetlist(std::vector<Elemento> netlist, int num_elementos){
 		}
 }
 
-void montarSistemaDC(std::vector<Elemento>& netlist, std::vector< std::vector<long double>>& Yn, int num_variaveis, int num_elementos){
+void montarSistemaDC(std::vector<Elemento>& netlist, std::vector< std::vector<long double>>& Yn, int num_variaveis){
 	int i, j;
 	long double g;
 	char tipo;
@@ -293,7 +299,6 @@ void montarSistemaDC(std::vector<Elemento>& netlist, std::vector< std::vector<lo
   }
 
   /* Monta estampas */
-  //for (i=1; i<=num_elementos; i++) {
 	for (auto &elemento: netlist){
     tipo=elemento.nome[0];
     if (tipo=='R') {
@@ -391,25 +396,6 @@ void mostrarSistema(std::string msg, std::vector<std::vector<long double>> Yn, i
         else printf(" ... ");
 			std::cout << std::endl;
     }
-}
-
-void adicionarVariaveisDinamicas(std::vector<std::string>& lista, std::vector<Elemento>& componentesVariantes, int& num_variaveis, int& num_nos){
-	char tipo;
-
-  num_nos=num_variaveis;
-	for(auto &componente: componentesVariantes){
-    tipo=componente.nome[0];
-    if (tipo=='C' || tipo=='L') {
-      num_variaveis++;
-      lista.push_back("j"+componente.nome);
-			componente.x = num_variaveis;
-    }
-		else if (tipo=='V'){
-			num_variaveis++;
-			lista.push_back("j"+componente.nome);
-			componente.x = num_variaveis;
-		}
-  }
 }
 
 void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>& sistema, std::vector<Elemento> componentesVariantes, std::vector<long double> solucao_anterior, double passo, double t){
@@ -528,7 +514,6 @@ int simulacaoTrapezios(
 		std::vector<Elemento> netlist, 
 		std::vector<Elemento> componentesVariantes, 
 		std::vector<std::string>& lista, 
-		int num_elementos, 
 		int num_nos, 
 		int& num_variaveis, 
 		double passo, 
@@ -542,10 +527,10 @@ int simulacaoTrapezios(
 	//   resolve o sistema nodal
 	//   guarda a solucao da iteracao na linha de uma matriz
 	using namespace std;
-	adicionarVariaveisDinamicas(lista, componentesVariantes, num_variaveis, num_nos); 
+	adicionarVariaveis(lista, componentesVariantes, num_variaveis, num_nos); 
 	
 	vector<vector<long double>> sistemaEsqueleto(num_variaveis+1, vector<long double>(num_variaveis+2));
-	montarSistemaDC(netlist, sistemaEsqueleto, num_variaveis, num_elementos);
+	montarSistemaDC(netlist, sistemaEsqueleto, num_variaveis);
 	vector<vector<long double>> sistemaCompleto(num_variaveis+1, vector<long double>(num_variaveis+2));
 
 	//vector<vector<long double>> solucoes;

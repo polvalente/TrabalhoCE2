@@ -28,7 +28,7 @@
 int main(int argc, char** argv)
 {
 	using namespace std;
-	int num_nos, num_variaveis, num_elementos;
+	int num_nos, num_variaveis;
 	string metodo = "DC";
 	double passo = 0.1;
 	double tempo_final = 1.0;
@@ -38,6 +38,7 @@ int main(int argc, char** argv)
 	vector<string> lista; 
 	vector<Elemento> netlist(1);
 	vector<Elemento> componentesVariantes;
+	vector<Elemento> componentesNaoLineares;
 	std::vector<std::vector<long double>> resultados;
   
 	cout << "Simulador construido para o trabalho de Circuitos Eletricos II\n\n" << endl;
@@ -52,11 +53,11 @@ int main(int argc, char** argv)
 	string nomeArquivo = "";
 	if (argc == 2)
 		nomeArquivo = argv[1];
-	leituraNetlist(lista, netlist, componentesVariantes, argc, nomeArquivo, num_elementos, num_variaveis, tempo_final, passo, metodo, passos_por_ponto);
+	leituraNetlist(lista, netlist, componentesVariantes, argc, nomeArquivo, num_variaveis, tempo_final, passo, metodo, passos_por_ponto, componentesNaoLineares);
 	if (componentesVariantes.size() > 0) metodo = "TRAP";
 
   /* Acrescenta variaveis de corrente acima dos nos, anotando no netlist */
-	adicionarVariaveis(lista, netlist, num_variaveis, num_nos, num_elementos);
+	adicionarVariaveis(lista, netlist, num_variaveis, num_nos);
 	//cin.get();
 
   
@@ -67,7 +68,7 @@ int main(int argc, char** argv)
 #endif
 
 	if (metodo == "TRAP"){
-		simulacaoTrapezios(netlist, componentesVariantes, lista, num_elementos, num_nos, num_variaveis, passo, tempo_final, passos_por_ponto, resultados);
+		simulacaoTrapezios(netlist, componentesVariantes, lista, num_nos, num_variaveis, passo, tempo_final, passos_por_ponto, resultados);
 		escreverResultadosNoArquivo(nomeArquivo, resultados, passo, tempo_final, passos_por_ponto, lista);
 	}
 	else{ /* DC */
@@ -75,12 +76,10 @@ int main(int argc, char** argv)
 		listarVariaveis(lista, num_variaveis);
 		cin.get();
 
-		mostrarNetlist(netlist, num_elementos);
+		mostrarNetlist(netlist);
 		cin.get();
 		/* Monta o sistema nodal modificado */
-		cout << "O circuito tem " << num_nos << " nos, " << num_variaveis << " variaveis e " << num_elementos << " elementos" << endl;
-		cin.get();
-		montarSistemaDC(netlist, Yn, num_variaveis, num_elementos);
+		montarSistemaDC(netlist, Yn, num_variaveis);
 		/* Resolve o sistema */
 		if (resolverSistema(Yn, num_variaveis)) {
 			cin.get();

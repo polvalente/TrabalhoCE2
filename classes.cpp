@@ -1,17 +1,17 @@
 #include "classes.hpp"
 #include <cmath>
 
-#define M_PI 3.14159265359
+#define PI 3.14159265358979323846
 
 Elemento::Elemento(void){
 }
 
 double Elemento::valorFonteSenoidal(double t){
 	if (t < atraso){
-		return nivelDC + amplitude * std::sin(M_PI/180*defasagem);
+		return nivelDC + amplitude * std::sin(PI/180*defasagem);
 	}
 	else
-		return nivelDC + amplitude * std::exp(-amortecimento*(t-atraso)) * std::sin(2*M_PI*frequencia * (t-atraso) + M_PI/180*defasagem);
+		return nivelDC + amplitude * std::exp(-amortecimento*(t-atraso)) * std::sin(2*PI*frequencia * (t-atraso) + PI/180*defasagem);
 }
 
 double Elemento::valorFontePulse(double t, double passo){
