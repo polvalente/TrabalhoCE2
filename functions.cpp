@@ -1,3 +1,26 @@
+
+/* Trabalho de Circuitos Eletricos II
+ * Alice Fontes - alicefontes@poli.ufrj.br
+ * Camyla Tsukuda Romao - camyla.romao@poli.ufrj.br
+ * Paulo Oliveira Lenzi Valente - paulovalente@poli.ufrj.br
+ * 
+ * Baseado no programa mna1 (por Antonio Carlos M. de Queiroz - acmq@coe.ufrj.br)
+ *
+ * O simulador aceita os seguintes tipos de elementos no netlist:
+ * Resistor:  R<nome> <no+> <no-> <resistencia>
+ * VCCS:      G<nome> <io+> <io-> <vi+> <vi-> <transcondutancia>
+ * VCVC:      E<nome> <vo+> <vo-> <vi+> <vi-> <ganho de tensao>
+ * CCCS:      F<nome> <io+> <io-> <ii+> <ii-> <ganho de corrente>
+ * CCVS:      H<nome> <vo+> <vo-> <ii+> <ii-> <transresistencia>
+ * Fonte I:   I<nome> <io+> <io-> <corrente>
+ * Fonte V:   V<nome> <vo+> <vo-> <tensao>
+ * Amp. op.:  O<nome> <vo1> <vo2> <vi1> <vi2>
+ * 
+ * As fontes F e H tem o ramo de entrada em curto
+ * O amplificador operacional ideal tem a saida suspensa
+ * Os nos podem ser nomes
+ *
+ * */
 #include <iostream>
 #include <string>
 #include <vector>
@@ -204,7 +227,7 @@ void leituraNetlist(
       netlist[num_elementos].c=numero(lista, nc, num_variaveis);
       netlist[num_elementos].d=numero(lista, nd, num_variaveis);
 			//amp_ops.push_back(netlist[num_elementos]);
-      cout << netlist[num_elementos].nome << " " << elemento.a << " " <<  elemento.b << " " << elemento.c << " " << elemento.d << endl;
+      cout << netlist[num_elementos].nome << " " << netlist[num_elementos].a << " " <<  netlist[num_elementos].b << " " << netlist[num_elementos].c << " " << netlist[num_elementos].d << endl;
     }
 		else if (tipo=='K') {
 			input >> netlist[num_elementos].nome >> na >> nb >> nc >> nd >> netlist[num_elementos].valor;
@@ -556,7 +579,7 @@ int simulacaoTrapezios(
 		cin.get();
 	#endif
 
-	for (double t0 = 0; t0+passo <= tempo_final; t0+=passo/passos_por_ponto){
+	for (double t0 = 0; t0 <= tempo_final; t0+=passo/passos_por_ponto){
 		#ifdef DEBUG
 			cout << "t: " << t0 << endl;
 			for(auto &i: solucoes[solucoes.size()-1]){
@@ -984,6 +1007,7 @@ void escreverResultadosNoArquivo(
 
 	double tempo = -passo;
 	unsigned contador_passos = 0;
+	solucoes.erase(solucoes.begin());
 	for(auto &solucao: solucoes){
 		if (contador_passos % passos_por_ponto != 0){
 			contador_passos++;

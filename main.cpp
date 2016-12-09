@@ -1,5 +1,6 @@
 /* Trabalho de Circuitos Eletricos II
- * Camyla Tsukuda Romao - 
+ * Alice Fontes - alicefontes@poli.ufrj.br
+ * Camyla Tsukuda Romao - camyla.romao@poli.ufrj.br
  * Paulo Oliveira Lenzi Valente - paulovalente@poli.ufrj.br
  * 
  * Baseado no programa mna1 (por Antonio Carlos M. de Queiroz - acmq@coe.ufrj.br)

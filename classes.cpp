@@ -1,3 +1,25 @@
+/* Trabalho de Circuitos Eletricos II
+ * Alice Fontes - alicefontes@poli.ufrj.br
+ * Camyla Tsukuda Romao - camyla.romao@poli.ufrj.br
+ * Paulo Oliveira Lenzi Valente - paulovalente@poli.ufrj.br
+ * 
+ * Baseado no programa mna1 (por Antonio Carlos M. de Queiroz - acmq@coe.ufrj.br)
+ *
+ * O simulador aceita os seguintes tipos de elementos no netlist:
+ * Resistor:  R<nome> <no+> <no-> <resistencia>
+ * VCCS:      G<nome> <io+> <io-> <vi+> <vi-> <transcondutancia>
+ * VCVC:      E<nome> <vo+> <vo-> <vi+> <vi-> <ganho de tensao>
+ * CCCS:      F<nome> <io+> <io-> <ii+> <ii-> <ganho de corrente>
+ * CCVS:      H<nome> <vo+> <vo-> <ii+> <ii-> <transresistencia>
+ * Fonte I:   I<nome> <io+> <io-> <corrente>
+ * Fonte V:   V<nome> <vo+> <vo-> <tensao>
+ * Amp. op.:  O<nome> <vo1> <vo2> <vi1> <vi2>
+ * 
+ * As fontes F e H tem o ramo de entrada em curto
+ * O amplificador operacional ideal tem a saida suspensa
+ * Os nos podem ser nomes
+ *
+ * */
 #include "classes.hpp"
 #include <cmath>
 
@@ -20,6 +42,8 @@ double Elemento::valorFonteSenoidal(double t){
 double Elemento::valorFontePulse(double t, double passo){
 	if (t < atraso)
 		return amplitude;
+	if (t > (atraso + periodo*numeroCiclos))
+		t = atraso + periodo*numeroCiclos;
 	double tempo = fmod(t-atraso, periodo);
 	tempoDescida = (tempoDescida == 0) ? passo : tempoDescida;
   tempoSubida = (tempoSubida == 0) ? passo : tempoSubida;
