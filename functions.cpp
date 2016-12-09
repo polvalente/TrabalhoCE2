@@ -5,16 +5,12 @@
 #include <fstream>
 #include <algorithm>
 #include <cmath>
-#include <cstdio>
+#include <cstdlib>
+#include <ctime>
 
 #include "classes.hpp"
 #include "functions.hpp"
 #include "constants.hpp"
-
-//int
-//  num_elementos, /* Elementos */
-//  num_variaveis, /* Variaveis */
-//  num_nos; /* Nos */
 
 /* Resolucao de sistema de equacoes lineares.
    Metodo de Gauss-Jordan com condensacao pivotal */
@@ -83,7 +79,6 @@ void leituraNetlist(
 		std::vector<Elemento>& componentesVariantes, 
 		int argc, 
 		std::string& nomeArquivo,  
-		int& num_elementos, 
 		int& num_variaveis,
 		double& tempo_final,
 		double& passo,
@@ -97,6 +92,7 @@ void leituraNetlist(
 	FILE *arquivo = NULL;
 	char tipo;
 	string na,nb,nc,nd;
+	int num_elementos=0;
 
 	if (argc == 2){
 		arquivo = fopen(nomeArquivo.c_str(), "r");
@@ -114,7 +110,6 @@ void leituraNetlist(
   cout << "Lendo netlist" << endl;
 	
 	ifstream input_file(nomeArquivo);
-	num_elementos=0;
 	num_variaveis=0;
 	lista.push_back("0");
   
@@ -127,11 +122,6 @@ void leituraNetlist(
     num_elementos++; /* Nao usa o netlist[0] */
 		netlist.push_back(elemento);
 
-    /*if (num_elementos>MAX_ELEM) {
-      cout << "O programa so aceita ate " << MAX_ELEM << " elementos" << endl;
-      exit(ERRO_NUM_ELEMENTOS);
-    }*/
-
     linha[0]=toupper(linha[0]);
     tipo=linha[0];
 
@@ -139,37 +129,38 @@ void leituraNetlist(
 
     if (tipo=='R') {
 			input >> netlist[num_elementos].nome >> na >> nb >> netlist[num_elementos].valor;
-      cout << netlist[num_elementos].nome << " " << na << " " <<  nb << " " << netlist[num_elementos].valor << endl;
       netlist[num_elementos].a=numero(lista, na, num_variaveis);
       netlist[num_elementos].b=numero(lista, nb, num_variaveis);
+      cout << netlist[num_elementos].nome << " " << netlist[num_elementos].a << " " << netlist[num_elementos].b << " " << netlist[num_elementos].valor << endl;
     }
 		else if (tipo == 'D' || tipo == '$'){
 			num_elementos--;
 			netlist.pop_back();
-			input >> elemento.nome >> na >> nb;
-			elemento.a = numero(lista, na, num_variaveis);
-			elemento.b = numero(lista, nb, num_variaveis);
-			cout << elemento.nome << " " << na << " " << nb << " ";
-			if(tipo == '$'){
-				input >> nc >> nd >> elemento.valor;
+			if (tipo == 'D'){
+				input >> elemento.nome >> na >> nb;
+				elemento.valor = 0;
+			}	
+			else{
+				input >> elemento.nome >> na >> nb >> nc >> nd >> elemento.valor;
 				elemento.c = numero(lista, nc, num_variaveis);
 				elemento.d = numero(lista, nd, num_variaveis);
-				cout << nc << " " << nd << " " << elemento.valor;
 			}
-			else{
-				elemento.valor = 0;
-			}
-			cout << endl;
+			elemento.a = numero(lista, na, num_variaveis);
+			elemento.b = numero(lista, nb, num_variaveis);
 			componentesNaoLineares.push_back(elemento);
+			cout << elemento.nome << " " << elemento.a << " " << elemento.b;
+			if(tipo == '$')
+				cout << " " << elemento.c << " " << elemento.d << " " << elemento.valor;
+			cout << endl;
 		}
 		else if (tipo == 'I' || tipo == 'V'){
 			num_elementos--;
 			netlist.pop_back();
 			input >> elemento.nome >> na >> nb >> elemento.tipoFonte;
-			cout << elemento.nome << " " << na << " " << nb << " " << elemento.tipoFonte;
 
 			elemento.a = numero(lista, na, num_variaveis);
 			elemento.b = numero(lista, nb, num_variaveis);
+			cout << elemento.nome << " " << elemento.a << " " << elemento.b << " " << elemento.tipoFonte;
 			if (elemento.tipoFonte == "DC"){
 				input >> elemento.valor;
 				cout << " " << elemento.valor << endl;
@@ -193,35 +184,35 @@ void leituraNetlist(
 			netlist.pop_back();
 			num_elementos--;
 			input >> elemento.nome >> na >> nb >> elemento.valor; 	
-			cout << elemento.nome << " " << na << " " << nb << " " << elemento.valor;
 			elemento.a = numero(lista, na, num_variaveis);
 			elemento.b = numero(lista, nb, num_variaveis);
+			cout << elemento.nome << " " << elemento.a << " " << elemento.b << " " << elemento.valor << endl;
 			componentesVariantes.push_back(elemento);
 		}
     else if (tipo=='G' || tipo=='E' || tipo=='F' || tipo=='H') {
 			input >> netlist[num_elementos].nome >> na >> nb >> nc >> nd >> netlist[num_elementos].valor;
-      cout << netlist[num_elementos].nome << " " << na << " " <<  nb << " " << nc << " " << nd << " " << netlist[num_elementos].valor << endl;
       netlist[num_elementos].a=numero(lista, na, num_variaveis);
       netlist[num_elementos].b=numero(lista, nb, num_variaveis);
       netlist[num_elementos].c=numero(lista, nc, num_variaveis);
       netlist[num_elementos].d=numero(lista, nd, num_variaveis);
+      cout << netlist[num_elementos].nome << " " << elemento.a << " " <<  elemento.b << " " << elemento.c << " " << elemento.d << " " << netlist[num_elementos].valor << endl;
     }
     else if (tipo=='O') {
 			input >> netlist[num_elementos].nome >> na >> nb >> nc >> nd;
-      cout << netlist[num_elementos].nome << " " << na << " " <<  nb << " " << nc << " " << nd << endl;
       netlist[num_elementos].a=numero(lista, na, num_variaveis);
       netlist[num_elementos].b=numero(lista, nb, num_variaveis);
       netlist[num_elementos].c=numero(lista, nc, num_variaveis);
       netlist[num_elementos].d=numero(lista, nd, num_variaveis);
 			//amp_ops.push_back(netlist[num_elementos]);
+      cout << netlist[num_elementos].nome << " " << elemento.a << " " <<  elemento.b << " " << elemento.c << " " << elemento.d << endl;
     }
 		else if (tipo=='K') {
 			input >> netlist[num_elementos].nome >> na >> nb >> nc >> nd >> netlist[num_elementos].valor;
-			cout << netlist[num_elementos].nome << " " << na << " " << nb << " " << nc << " " << nd << " " << netlist[num_elementos].valor << endl;
 			netlist[num_elementos].a = numero(lista, na, num_variaveis);
 			netlist[num_elementos].b = numero(lista, nb, num_variaveis);
 			netlist[num_elementos].c = numero(lista, nc, num_variaveis);
 			netlist[num_elementos].d = numero(lista, nd, num_variaveis);
+			cout << netlist[num_elementos].nome << " " << netlist[num_elementos].a << " " << netlist[num_elementos].b << " " << netlist[num_elementos].c << " " << netlist[num_elementos].d << " " << netlist[num_elementos].valor << endl;
 		}
     else if (tipo=='*') { /* Comentario comeca com "*" */
       cout << "Comentario: " << linha << endl;
@@ -233,10 +224,6 @@ void leituraNetlist(
 			num_elementos--;
 			string temp;
 			input >> temp >> tempo_final >> passo >> metodo >> passos_por_ponto; 
-			cout << "Tempo final: "<< tempo_final << endl;
-			cout << "Passo: " << passo << endl;
-			cout << "Metodo: " << metodo << endl;
-			cout << "Passos por ponto: " << passos_por_ponto << endl;
 		}
     else {
       cout << "Elemento desconhecido: " << linha << endl;
@@ -246,32 +233,32 @@ void leituraNetlist(
   }
 }
 
-void adicionarVariaveis(std::vector<std::string>& lista, std::vector<Elemento>& netlist, int& num_variaveis, int& num_nos, int& num_elementos){
-	int i;
+void adicionarVariaveis(std::vector<std::string>& lista, std::vector<Elemento>& netlist, int& num_variaveis, int& num_nos){
 	char tipo;
 
   num_nos=num_variaveis;
-  for (i=1; i<=num_elementos; i++) {
-    tipo=netlist[i].nome[0];
-    if (tipo=='V' || tipo=='E' || tipo=='F' || tipo=='O' || tipo=='K') {
+  for (auto &componente: netlist) {
+    tipo=componente.nome[0];
+    if (tipo=='V' || 
+				tipo=='E' || 
+				tipo=='F' || 
+				tipo=='O' || 
+				tipo=='K' || 
+				tipo=='C' || 
+				tipo=='L' ||
+				tipo=='D' || 
+				tipo=='$') 
+		{
       num_variaveis++;
-      /*if (num_variaveis>MAX_NOS) {
-        cout << "As correntes extra excederam o numero de variaveis permitido (" << MAX_NOS << ")" << endl;
-        exit(ERRO_NUM_VARIAVEIS);
-      }*/
-      lista.push_back("j"+netlist[i].nome);
-      netlist[i].x=num_variaveis;
+      lista.push_back("j"+componente.nome);
+      componente.x=num_variaveis;
     }
     else if (tipo=='H') {
       num_variaveis+=2;
-      /*if (num_variaveis>MAX_NOS) {
-				std::cout << "As correntes extra excederam o numero de variaveis permitido (" << MAX_NOS << ")" << std::endl;
-        exit(ERRO_NUM_VARIAVEIS);
-      }*/
-      lista.push_back("jx"+netlist[i].nome);
-      netlist[i].x=num_variaveis-1;
-      lista.push_back("jy"+netlist[i].nome);
-      netlist[i].y=num_variaveis;
+      lista.push_back("jx"+componente.nome);
+      componente.x=num_variaveis-1;
+      lista.push_back("jy"+componente.nome);
+      componente.y=num_variaveis;
     }
   }
 }
@@ -282,13 +269,13 @@ void listarVariaveis(std::vector<std::string> lista, int num_variaveis){
 		std::cout << i << " -> " << lista[i] << std::endl;
 }
 
-void mostrarNetlist(std::vector<Elemento> netlist, int num_elementos){
+void mostrarNetlist(std::vector<Elemento> netlist){
 	using namespace std;
 	char tipo;
-	int i;
+	unsigned i;
 
 	cout << "Netlist interno final" << endl;
-		for (i=1; i<=num_elementos; i++) {
+		for (i=1; i<=(netlist.size()-1); i++) {
 			tipo=netlist[i].nome[0];
 			if (tipo=='R' || tipo=='I' || tipo=='V') {
 				cout << netlist[i].nome << " " << netlist[i].a << " " << netlist[i].b << " " << netlist[i].valor << endl;
@@ -306,7 +293,7 @@ void mostrarNetlist(std::vector<Elemento> netlist, int num_elementos){
 		}
 }
 
-void montarSistemaDC(std::vector<Elemento>& netlist, std::vector< std::vector<long double>>& Yn, int num_variaveis, int num_elementos){
+void montarSistemaDC(std::vector<Elemento>& netlist, std::vector< std::vector<long double>>& Yn, int num_variaveis){
 	int i, j;
 	long double g;
 	char tipo;
@@ -318,7 +305,6 @@ void montarSistemaDC(std::vector<Elemento>& netlist, std::vector< std::vector<lo
   }
 
   /* Monta estampas */
-  //for (i=1; i<=num_elementos; i++) {
 	for (auto &elemento: netlist){
     tipo=elemento.nome[0];
     if (tipo=='R') {
@@ -411,45 +397,11 @@ void mostrarSistema(std::string msg, std::vector<std::vector<long double>> Yn, i
 
   for (int i=1; i<=num_variaveis; i++) {
       for (int j=1; j<=num_variaveis+1; j++)
-        if ( (Yn[i][j]!=0) || (j == num_variaveis+1)){
-					printf("%+3.1f ",(float) Yn[i][j]);
-				}
+        if ( (Yn[i][j]!=0) || (j == num_variaveis+1)) 
+					printf("%+3.1Lf ",Yn[i][j]);
         else printf(" ... ");
 			std::cout << std::endl;
     }
-}
-
-void adicionarVariaveisDinamicas(std::vector<std::string>& lista, std::vector<Elemento>& componentesVariantes, std::vector<Elemento>& componentesNaoLineares, int& num_variaveis, int& num_nos){
-	char tipo;
-
-  num_nos=num_variaveis;
-	for(auto &componente: componentesVariantes){
-    tipo=componente.nome[0];
-    if (tipo=='C' || tipo=='L') {
-      num_variaveis++;
-      lista.push_back("j"+componente.nome);
-			componente.x = num_variaveis;
-    }
-		else if (tipo=='V'){
-			num_variaveis++;
-			lista.push_back("j"+componente.nome);
-			componente.x = num_variaveis;
-		}
-  }
-
-	for(auto &componente: componentesNaoLineares){
-		tipo = componente.nome[0];
-		if (tipo == 'D' || tipo == '$'){
-			num_variaveis++;
-			lista.push_back("j"+componente.nome);
-			componente.x = num_variaveis;
-		}
-	}
-
-	#ifdef DEBUG
-	//for(auto &var: lista)
-	//	std::cout << var << std::endl;
-	#endif
 }
 
 void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>& sistema, std::vector<Elemento> componentesVariantes, std::vector<long double> solucao_anterior, double passo, double t){
@@ -479,6 +431,21 @@ void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>
 			sistema[componente.x][index]        += -G*V;
 		}
 		else if (tipo == 'L'){
+			/*long double G = 2*componente.valor/passo;
+			long double I = solucao_anterior[componente.x] + passo/(2*componente.valor)*(solucao_anterior[componente.a] - solucao_anterior[componente.b]);  
+
+			sistema[componente.a][componente.a] += G;
+			sistema[componente.a][componente.b] -= G;
+			sistema[componente.b][componente.a] -= G;
+			sistema[componente.b][componente.b] += G;
+			sistema[componente.a][index] -= I;
+			sistema[componente.b][index] += I;
+
+			sistema[componente.x][componente.a] += G;
+			sistema[componente.x][componente.b] -= G;
+			sistema[componente.x][componente.x] -= 1;
+			sistema[componente.x][index] -= I;*/
+
 			sistema[componente.a][componente.x] += 1;
 			sistema[componente.b][componente.x] -= 1;
 
@@ -549,110 +516,17 @@ void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>
 
 }
 
-std::vector<long double> resolverNewtonRaphson(std::vector<std::vector<long double> > sistemaInicial, std::vector<Elemento> componentesNaoLineares, int num_variaveis, bool& convergiu){
-	std::vector<long double> solucao_inicial(num_variaveis+1);
-	for(int i = 0; i <= num_variaveis; i++)
-		solucao_inicial[i] = 0;
-	return resolverNewtonRaphson(sistemaInicial, componentesNaoLineares,solucao_inicial, num_variaveis, convergiu);
-}
-
-std::vector<long double> resolverNewtonRaphson(std::vector<std::vector<long double> > sistemaInicial, std::vector<Elemento> componentesNaoLineares, std::vector<long double> solucao_inicial, int num_variaveis, bool& convergiu){
-	//Funcao que executa o algoritmo de newton raphson para resolucao do circuito
-  #ifdef DEBUG
-		using namespace std;
-		cout << "Entrou NR" << endl;
-  #endif
-	std::vector<long double> solucao = solucao_inicial;
-	if(componentesNaoLineares.size() == 0){
-		std::vector<std::vector<long double> > sistema = sistemaInicial;
-		int nv = num_variaveis;
-		resolverSistema(sistema, nv);
-		for(int i = 0; i <= nv; i++)
-			solucao[i] = sistema[i][sistema[i].size()-1];
-		convergiu = true;
-			
-		return solucao;
-	}
-	
-	convergiu = false;
-	#ifdef DEBUG
-		cout << "Antes de comecar iteracoes" << endl;
-	#endif
-	for(unsigned iter = 0; iter < MAX_ITER; iter++){
-
-    #ifdef DEBUG
-	    cout << "Iteracao: " << iter << endl;
-    #endif
-		std::vector<long double> solucao_anterior = solucao;
-		std::vector<std::vector<long double>> sistema = sistemaInicial;
-		for(auto &componente: componentesNaoLineares){
-			char tipo = componente.nome[0];
-			if (tipo == 'D' || tipo == '$'){
-				long double v = (tipo == 'D') ? solucao_anterior[componente.a] - solucao_anterior[componente.b] : solucao_anterior[componente.c] - solucao_anterior[componente.d]; 
-				long double limite = componente.valor;
-
-				#ifdef DEBUG
-					cout << "V: " << v << endl << "limite: " << limite << endl;
-					cout << "a: " << componente.a << endl;
-					cout << "b: " << componente.b << endl;
-					cout << "c: " << componente.c << endl;
-					cout << "d: " << componente.d << endl;
-					cout << "x: " << componente.x << endl;
-					cout << "linhas: " << sistema.size() << endl;
-					cout << "colunas: " << sistema[0].size() << endl;
-					cout << "nv+1: " << num_variaveis+1 << endl;
-					cout << endl << endl;
-				#endif
-				if (v >= limite){
-					//estampa curto: fonte de tensao = 0
-					sistema[componente.a][componente.x] += 1;
-					sistema[componente.b][componente.x] -= 1;
-					sistema[componente.x][componente.a] -= 1;				
-					sistema[componente.x][componente.b] += 1;				
-					sistema[componente.x][num_variaveis+1] -= 0;				
-				}
-				else{
-					//estampa aberto: fonte de corrente = 0
-					sistema[componente.a][num_variaveis+1] -= 0;
-					sistema[componente.b][num_variaveis+1] += 0;
-					sistema[componente.x][componente.x]		 += 1;
-					sistema[componente.x][num_variaveis+1] += 0;
-				}
-			}
-			#ifdef DEBUG
-			cout << "sistema apos estampa de: " << componente.nome <<endl;
-			mostrarSistema("", sistema, num_variaveis);
-			#endif
-		}
-		resolverSistema(sistema, num_variaveis);
-		bool convergiuTodas = true;
-		for(int i = 0; i < num_variaveis+1; i++){
-			solucao[i] = sistema[i][sistema[i].size()-1];
-
-			if(std::abs(solucao_anterior[i] - solucao[i]) > NR_CONVERGENCIA){
-				convergiuTodas = false;
-			}
-		}
-		if(convergiuTodas){
-			convergiu = true;
-			break;
-		}
-	}
-	return solucao;
-}
-
 int simulacaoTrapezios(
 		std::vector<Elemento> netlist, 
 		std::vector<Elemento> componentesVariantes, 
 		std::vector<std::string>& lista, 
-		int num_elementos, 
 		int num_nos, 
 		int& num_variaveis, 
 		double passo, 
 		double tempo_final, 
 		unsigned passos_por_ponto,
 		std::vector<std::vector<long double>>& solucoes,
-		std::vector<Elemento> componentesNaoLineares){
+		std::vector<Elemento>& componentesNaoLineares){
 	//	std::vector<Elemento>& amp_ops){
 	// montar sistema dc
 	// a cada iteracao:
@@ -660,12 +534,13 @@ int simulacaoTrapezios(
 	//   resolve o sistema nodal
 	//   guarda a solucao da iteracao na linha de uma matriz
 	using namespace std;
-	bool convergiu;
-
-	adicionarVariaveisDinamicas(lista, componentesVariantes, componentesNaoLineares, num_variaveis, num_nos); 
+	adicionarVariaveis(lista, componentesVariantes, num_variaveis, num_nos); 
+	if(componentesNaoLineares.size() != 0){
+		adicionarVariaveis(lista, componentesNaoLineares, num_variaveis, num_nos);
+	}
 	
 	vector<vector<long double>> sistemaEsqueleto(num_variaveis+1, vector<long double>(num_variaveis+2));
-	montarSistemaDC(netlist, sistemaEsqueleto, num_variaveis, num_elementos);
+	montarSistemaDC(netlist, sistemaEsqueleto, num_variaveis);
 	vector<vector<long double>> sistemaCompleto(num_variaveis+1, vector<long double>(num_variaveis+2));
 
 	//vector<vector<long double>> solucoes;
@@ -673,9 +548,7 @@ int simulacaoTrapezios(
 		cout << "Calculando ponto de operacao" << endl;
 		cin.get();
 	#endif
-	vector<long double> solucao_anterior = resolverPontoOperacao(sistemaEsqueleto, componentesVariantes, num_variaveis, passo, componentesNaoLineares, convergiu);
-	if(!convergiu)
-		return ERRO_CONVERGENCIA;
+	vector<long double> solucao_anterior = resolverPontoOperacao(sistemaEsqueleto, componentesVariantes, componentesNaoLineares, num_variaveis, passo);
 	solucoes.push_back(solucao_anterior);
 	#ifdef DEBUG
 		cout << "Iniciando solucao por trapezios" << endl;
@@ -694,39 +567,149 @@ int simulacaoTrapezios(
 		#endif
 		sistemaCompleto = sistemaEsqueleto;			
 		adicionarEstampasComponentesVariantes(sistemaCompleto, componentesVariantes, solucao_anterior, passo/passos_por_ponto, t0);
-		#ifdef DEBUG
-			mostrarSistema("Sistema com estampas lineares:", sistemaCompleto, num_variaveis);
-			cin.get();
-		#endif
-		//resolverSistema(sistemaCompleto, num_variaveis);
-		vector<long double> solucao = resolverNewtonRaphson(sistemaCompleto, componentesNaoLineares, solucoes[solucoes.size()-1], num_variaveis, convergiu);
-		if(!convergiu){
-			#ifdef DEBUG
-				cout << "Erro de convergencia: " << endl;
-			#endif
-			return ERRO_CONVERGENCIA;
+		vector<long double> solucao(num_variaveis+1);
+		if (componentesNaoLineares.size() == 0){
+			resolverSistema(sistemaCompleto, num_variaveis);
+			for (int i=0; i<num_variaveis+1; i++)
+				solucao[i] = sistemaCompleto[i][num_variaveis+1];
 		}
-		solucoes.push_back(solucao);
-		/*vector<long double> solucao(num_variaveis+2);
-		for (int i=0; i<num_variaveis+1; i++)
-			solucao[i] = sistemaCompleto[i][num_variaveis+1];
-		//solucao[0] = 0.0;
+		else{
+			bool convergiu;
+			solucao = resolverNewtonRaphson(sistemaCompleto, componentesNaoLineares, num_variaveis, solucao_anterior, convergiu);
+			if (!convergiu){
+				solucoes.push_back(solucao);
+				return ERRO_CONVERGENCIA_NEWTON_RAPHSON;
+			}
+		}
 		solucao_anterior = solucao;
 		solucoes.push_back(solucao);
-		*/
 	}
 	
 	return OK;
 
 }
 
-std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long double>> sistema, std::vector<Elemento> componentesVariantes, int num_variaveis, double passo, std::vector<Elemento> componentesNaoLineares, bool& convergiu){
+std::vector<long double> resolverNewtonRaphson(std::vector<std::vector<long double>> sistemaInicial, std::vector<Elemento> componentesNaoLineares, int num_variaveis, std::vector<long double> solucaoInicial, bool& convergiu){
+	std::vector<long double> solucao_anterior = solucaoInicial;
+	std::vector<long double> solucao = solucaoInicial;
+	std::vector<std::vector<long double>> sistema;
+	int reinicializacoes = 0;
+	convergiu = false;
+
+	srand(time(0));
+	
+	do{
+		for(unsigned iter = 0; iter < MAX_ITER; iter++){
+			sistema = sistemaInicial;
+			unsigned ultimaColuna = sistema[0].size() - 1;
+			for(auto &componente: componentesNaoLineares){
+				//adicionar estampas dos elementos baseado na solucao anterior
+				char tipo = componente.nome[0];
+				if(tipo == 'D'){
+					double v = solucao_anterior[componente.a] - solucao_anterior[componente.b];
+					if(v > componente.valor){
+						//curto
+#ifdef DEBUG_DIODO
+							std::cout << "Entrou >" << std::endl;
+#endif						
+						sistema[componente.a][componente.x]    += 1;
+						sistema[componente.b][componente.x]    -= 1;
+						sistema[componente.x][componente.a]    += 1;
+						sistema[componente.x][componente.b]    -= 1;
+						sistema[componente.x][ultimaColuna] += componente.valor;
+						componente.tipoFonte = "curto";
+					}
+					else if (std::abs(v - componente.valor) < TOLG){
+						if(componente.tipoFonte == "curto"){
+#ifdef DEBUG_DIODO
+							std::cout << "Entrou =" << std::endl;
+#endif						
+							sistema[componente.a][componente.x]    += 1;
+							sistema[componente.b][componente.x]    -= 1;
+							sistema[componente.x][componente.a]    += 1;
+							sistema[componente.x][componente.b]    -= 1;
+							sistema[componente.x][ultimaColuna] += componente.valor;
+						}
+						else{
+							sistema[componente.x][componente.x]    += 1;
+							sistema[componente.x][ultimaColuna] += 0;
+						}
+					}
+					else{
+						//aberto
+#ifdef DEBUG_DIODO
+							std::cout << "Entrou <" << std::endl;
+#endif						
+						sistema[componente.x][componente.x]    += 1;
+						sistema[componente.x][ultimaColuna] += 0;
+						componente.tipoFonte = "aberto";
+					}
+				}
+				else if(tipo == '$'){
+					double v = solucao_anterior[componente.c] - solucao_anterior[componente.d];
+					if(v > componente.valor){
+						//curto
+						sistema[componente.a][componente.x]    += 1;
+						sistema[componente.b][componente.x]    -= 1;
+						sistema[componente.x][componente.a]    += 1;
+						sistema[componente.x][componente.b]    -= 1;
+						sistema[componente.x][ultimaColuna] += componente.valor;
+					}
+					else if (v == componente.valor){
+						if(componente.tipoFonte == "curto"){
+							sistema[componente.a][componente.x]    += 1;
+							sistema[componente.b][componente.x]    -= 1;
+							sistema[componente.x][componente.a]    += 1;
+							sistema[componente.x][componente.b]    -= 1;
+							sistema[componente.x][ultimaColuna] += componente.valor;
+						}
+						else{
+							sistema[componente.x][componente.x]    += 1;
+							sistema[componente.x][ultimaColuna] += 0;
+						}
+					}
+					else{
+						//aberto
+						sistema[componente.x][componente.x]    += 1;
+						sistema[componente.x][ultimaColuna] += 0;
+					}
+				}
+			}
+			#ifdef DEBUG
+				mostrarSistema("Sistema antes da resolucao: ", sistema, num_variaveis);
+			#endif
+
+			resolverSistema(sistema, num_variaveis);
+			bool divergiu = false;
+			for(int index = 0; index <= num_variaveis; index++){
+				solucao[index] = sistema[index][num_variaveis+1];
+				if(std::abs(solucao[index] - solucao_anterior[index]) > TOLG)
+					divergiu = true;
+			}
+
+			solucao_anterior = solucao;
+			
+			if((!divergiu) && (iter > 0)){
+				convergiu = true;
+				return solucao;
+			}
+		}//end for
+		//Nao convergiu: reinicializar a solucao aleatoriamente e tentar novamente
+		for(int index = 0; index < num_variaveis+1; index++){
+			solucao_anterior[index] = (rand()%100)/100;
+			solucao[index] = solucao_anterior[index];
+			reinicializacoes++;
+		}
+	} while (reinicializacoes < MAX_ITER/10);
+	return solucao;
+}
+
+std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long double>> sistema, std::vector<Elemento> componentesVariantes, std::vector<Elemento> componentesNaoLineares, int num_variaveis, double passo){
 	using namespace std;
 	vector<vector<long double>> Yn(num_variaveis+1, vector<long double>(num_variaveis+2));
 	Yn = sistema;
 	double g;
 	double t = 0.0;
-	//for (unsigned i = 0; i < componentesVariantes.size(); i++){
 	for(auto &elemento: componentesVariantes){
 		char tipo = elemento.nome[0];
 		unsigned index = Yn[elemento.a].size() - 1;
@@ -810,11 +793,28 @@ std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long doub
 	cin.get();
 #endif
 	
-	//resolverSistema(Yn, num_variaveis);
-	vector<long double> solucao_anterior(num_variaveis+1);
+		vector<long double> solucao(num_variaveis+1);
+		if (componentesNaoLineares.size() == 0){
+			resolverSistema(Yn, num_variaveis);
+			for (int i=0; i<num_variaveis+1; i++)
+				solucao[i] = Yn[i][num_variaveis+1];
+		}
+		else{
+#ifdef DEBUG
+			cout << "Newton-Raphson Ponto de Operacao" << endl;
+#endif
+			bool convergiu;
+			vector<long double> solucao_anterior(num_variaveis+1);
+			for(auto &i: solucao_anterior) i = 0.1;
+			solucao = resolverNewtonRaphson(Yn, componentesNaoLineares, num_variaveis, solucao_anterior, convergiu);
+			if (!convergiu){
+				exit(ERRO_CONVERGENCIA_NEWTON_RAPHSON);
+			}
+		}
+	/*resolverSistema(Yn, num_variaveis);
+	vector<long double> solucao(num_variaveis+1);
 	for (int i=0; i<num_variaveis+1; i++)
-		solucao_anterior[i] = 0;
-	std::vector<long double> solucao = resolverNewtonRaphson(Yn, componentesNaoLineares, solucao_anterior, num_variaveis, convergiu);
+		solucao[i] = Yn[i][num_variaveis+1];*/
 	return solucao;
 }
 
@@ -975,12 +975,11 @@ void escreverResultadosNoArquivo(
 
 	arquivoSaida.open(nomeArquivoSaida);
 	arquivoSaida << "t ";
-	for(unsigned index = 0; index < lista.size()-1; index++){//auto &variavel: lista){
-		arquivoSaida << lista[index];
+	for(auto &variavel: lista){
+		arquivoSaida << variavel;
 		//if (variavel != lista[lista.size()-1])
 			arquivoSaida << " ";
 	}
-	arquivoSaida << lista[lista.size()-1];
 	arquivoSaida << "\n";
 
 	double tempo = -passo;
@@ -994,14 +993,13 @@ void escreverResultadosNoArquivo(
 		tempo += passo;
 		arquivoSaida << tempo << " ";
 		int ii = 0;
-		for(unsigned index_solucao = 0; index_solucao < lista.size()-1; index_solucao++){
+		for(unsigned index_solucao = 0; index_solucao < lista.size(); index_solucao++){
 			arquivoSaida << solucao[index_solucao];
 			//std::cout << lista[ii] << ": "<< solucao[index_solucao] << std::endl;
 			ii++;
 			//if (val != solucao[solucao.size()-1])
 				arquivoSaida << " ";
 		}
-		arquivoSaida << solucao[lista.size()-1];
 		arquivoSaida << "\n";
 	}
 	arquivoSaida.close();

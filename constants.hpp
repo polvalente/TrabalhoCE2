@@ -10,15 +10,13 @@
 #define TOLG 1e-9
 #define COND_CURTO  1e10
 #define COND_ABERTO 1/COND_CURTO
-#define NR_CONVERGENCIA 1e-9 
-#define MAX_ITER 1e4
+#define MAX_ITER 1000
 
-#define OK			    0
-#define ERRO_RESOLUCAO_SISTEMA	    1
-#define ERRO_ELEMENTO_DESCONHECIDO  2
-#define ERRO_NUM_ARGUMENTOS	    3
-#define ERRO_NUM_VARIAVEIS	    4 
-#define ERRO_NUM_ELEMENTOS	    5
-#define ERRO_CONVERGENCIA           6
-#define ERRO_FONTE_PULSE            7
+#define OK                                  0
+#define ERRO_RESOLUCAO_SISTEMA              1
+#define ERRO_ELEMENTO_DESCONHECIDO          2
+#define ERRO_NUM_ARGUMENTOS                 3
+#define ERRO_NUM_VARIAVEIS                  4
+#define ERRO_NUM_ELEMENTOS                  5
+#define ERRO_CONVERGENCIA_NEWTON_RAPHSON    6
 #endif

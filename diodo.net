@@ -1,0 +1,5 @@
+TESTE COM DIODOS
+V1 a 0 DC 3
+R1 b 0 1
+D1 a b
+.TRAN 0 1 TRAP 1
