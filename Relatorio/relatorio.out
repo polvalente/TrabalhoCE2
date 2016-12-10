@@ -1,0 +1,10 @@
+\BOOKMARK [1][-]{section*.1}{Introdu\347\343o}{}% 1
+\BOOKMARK [1][-]{section.1}{Funcionamento b\341sico do simulador}{}% 2
+\BOOKMARK [1][-]{section.2}{Formato do Netlist}{}% 3
+\BOOKMARK [1][-]{section.3}{Entendimento detalhado do programa}{}% 4
+\BOOKMARK [1][-]{section.4}{Exemplos}{}% 5
+\BOOKMARK [2][-]{subsection.4.1}{Circuito RC em s\351rie}{section.4}% 6
+\BOOKMARK [2][-]{subsection.4.2}{Circuito RL em s\351rie}{section.4}% 7
+\BOOKMARK [2][-]{subsection.4.3}{Transformador com fonte senoidal}{section.4}% 8
+\BOOKMARK [2][-]{subsection.4.4}{Fonte retificada com filtro capacitivo \(tap central simulado por duas fontes\)}{section.4}% 9
+\BOOKMARK [2][-]{subsection.4.5}{Integrador n\343o inversor com amplificadores operacionais}{section.4}% 10

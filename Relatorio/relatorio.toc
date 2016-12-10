@@ -1,0 +1,11 @@
+\select@language {portuguese}
+\contentsline {section}{Introdu\IeC {\c c}\IeC {\~a}o}{3}{section*.1}
+\contentsline {section}{\numberline {1}Funcionamento b\IeC {\'a}sico do simulador}{3}{section.1}
+\contentsline {section}{\numberline {2}Formato do Netlist}{4}{section.2}
+\contentsline {section}{\numberline {3}Entendimento detalhado do programa}{5}{section.3}
+\contentsline {section}{\numberline {4}Exemplos}{7}{section.4}
+\contentsline {subsection}{\numberline {4.1}Circuito RC em s\IeC {\'e}rie}{7}{subsection.4.1}
+\contentsline {subsection}{\numberline {4.2}Circuito RL em s\IeC {\'e}rie}{8}{subsection.4.2}
+\contentsline {subsection}{\numberline {4.3}Transformador com fonte senoidal}{9}{subsection.4.3}
+\contentsline {subsection}{\numberline {4.4}Fonte retificada com filtro capacitivo (tap central simulado por duas fontes)}{10}{subsection.4.4}
+\contentsline {subsection}{\numberline {4.5}Integrador n\IeC {\~a}o inversor com amplificadores operacionais}{11}{subsection.4.5}

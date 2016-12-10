@@ -676,7 +676,7 @@ std::vector<long double> resolverNewtonRaphson(std::vector<std::vector<long doub
 						sistema[componente.b][componente.x]    -= 1;
 						sistema[componente.x][componente.a]    += 1;
 						sistema[componente.x][componente.b]    -= 1;
-						sistema[componente.x][ultimaColuna] += componente.valor;
+						sistema[componente.x][ultimaColuna] += 0;
 					}
 					else if (v == componente.valor){
 						if(componente.tipoFonte == "curto"){
@@ -684,7 +684,7 @@ std::vector<long double> resolverNewtonRaphson(std::vector<std::vector<long doub
 							sistema[componente.b][componente.x]    -= 1;
 							sistema[componente.x][componente.a]    += 1;
 							sistema[componente.x][componente.b]    -= 1;
-							sistema[componente.x][ultimaColuna] += componente.valor;
+							sistema[componente.x][ultimaColuna] += 0;
 						}
 						else{
 							sistema[componente.x][componente.x]    += 1;
