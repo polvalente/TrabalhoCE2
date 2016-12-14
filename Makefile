@@ -39,4 +39,4 @@ windows: ${WIN_OBJS}
 	${WIN_CPP_LD} ${WIN_CPP_LD_FLAGS} Simulador.exe ${WIN_OBJS}
 
 clean:
-	rm -rf Simulador ${OBJS} WinSimulador.exe ${WIN_OBJS}
+	rm -rf Simulador ${OBJS} Simulador.exe ${WIN_OBJS}
