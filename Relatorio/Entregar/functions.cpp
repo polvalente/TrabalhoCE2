@@ -159,7 +159,7 @@ void leituraNetlist(
 		else if (tipo == 'D' || tipo == '$'){
 			num_elementos--;
 			netlist.pop_back();
-			elemento.tipoFonte = "curto";
+			//elemento.tipoFonte = "curto";
 			if (tipo == 'D'){
 				input >> elemento.nome >> na >> nb;
 				elemento.valor = 0;
