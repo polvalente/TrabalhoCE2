@@ -1,26 +1,3 @@
-
-/* Trabalho de Circuitos Eletricos II
- * Alice Fontes - alicefontes@poli.ufrj.br
- * Camyla Tsukuda Romao - camyla.romao@poli.ufrj.br
- * Paulo Oliveira Lenzi Valente - paulovalente@poli.ufrj.br
- * 
- * Baseado no programa mna1 (por Antonio Carlos M. de Queiroz - acmq@coe.ufrj.br)
- *
- * O simulador aceita os seguintes tipos de elementos no netlist:
- * Resistor:  R<nome> <no+> <no-> <resistencia>
- * VCCS:      G<nome> <io+> <io-> <vi+> <vi-> <transcondutancia>
- * VCVC:      E<nome> <vo+> <vo-> <vi+> <vi-> <ganho de tensao>
- * CCCS:      F<nome> <io+> <io-> <ii+> <ii-> <ganho de corrente>
- * CCVS:      H<nome> <vo+> <vo-> <ii+> <ii-> <transresistencia>
- * Fonte I:   I<nome> <io+> <io-> <corrente>
- * Fonte V:   V<nome> <vo+> <vo-> <tensao>
- * Amp. op.:  O<nome> <vo1> <vo2> <vi1> <vi2>
- * 
- * As fontes F e H tem o ramo de entrada em curto
- * O amplificador operacional ideal tem a saida suspensa
- * Os nos podem ser nomes
- *
- * */
 #include <iostream>
 #include <string>
 #include <vector>
@@ -35,8 +12,7 @@
 #include "functions.hpp"
 #include "constants.hpp"
 
-/* Resolucao de sistema de equacoes lineares.
-   Metodo de Gauss-Jordan com condensacao pivotal */
+/* Solves linear system of equations using Gauss-Jordan method with pivotal condesation */
 int resolverSistema(std::vector< std::vector<long double>>& Yn, int& num_variaveis){
   int i,j,l, a;
   long double t, p;
@@ -83,7 +59,7 @@ int resolverSistema(std::vector< std::vector<long double>>& Yn, int& num_variave
   return OK;
 }
 
-/* Rotina que conta os nos e atribui numeros a eles */
+/* Converts variable names to numbers*/
 int numero(std::vector<std::string>& lista, std::string nome, int& num_variaveis)
 {
 	auto i = std::find(lista.begin(), lista.end(), nome);
@@ -96,6 +72,9 @@ int numero(std::vector<std::string>& lista, std::string nome, int& num_variaveis
 	num_variaveis++;
 	return num_variaveis;	
 }
+
+/*function that reads the netlist and returns three separed lists of which contain the various types of components and another list that contains the variables to be calculated*/
+
 void leituraNetlist(
 		std::vector<std::string>& lista, 
 		std::vector<Elemento>& netlist, 
@@ -108,7 +87,6 @@ void leituraNetlist(
 		std::string& metodo,
 		unsigned& passos_por_ponto,
 		std::vector<Elemento>& componentesNaoLineares){
-		//std::vector<Elemento>& amp_ops){
 	
 	using namespace std;
 
@@ -159,7 +137,7 @@ void leituraNetlist(
 		else if (tipo == 'D' || tipo == '$'){
 			num_elementos--;
 			netlist.pop_back();
-			//elemento.tipoFonte = "curto";
+			elemento.tipoFonte = "curto";
 			if (tipo == 'D'){
 				input >> elemento.nome >> na >> nb;
 				elemento.valor = 0;
@@ -258,6 +236,7 @@ void leituraNetlist(
 }
 
 void adicionarVariaveis(std::vector<std::string>& lista, std::vector<Elemento>& netlist, int& num_variaveis, int& num_nos){
+	// Function that adds the necessary variables for currents that need to be calculated
 	char tipo;
 
   num_nos=num_variaveis;
@@ -288,12 +267,14 @@ void adicionarVariaveis(std::vector<std::string>& lista, std::vector<Elemento>& 
 }
 
 void listarVariaveis(std::vector<std::string> lista, int num_variaveis){
+	// Function that lists variables, corresponding their numbers and their names
 	std::cout << "Variaveis internas:  " << std::endl;
   for (int i=0; i<=num_variaveis; i++)
 		std::cout << i << " -> " << lista[i] << std::endl;
 }
 
 void mostrarNetlist(std::vector<Elemento> netlist){
+	// Function that prints the netlist that has been read
 	using namespace std;
 	char tipo;
 	unsigned i;
@@ -318,6 +299,7 @@ void mostrarNetlist(std::vector<Elemento> netlist){
 }
 
 void montarSistemaDC(std::vector<Elemento>& netlist, std::vector< std::vector<long double>>& Yn, int num_variaveis){
+	//Function that creates the DC system, which is the basis for all solutions in the time domain
 	int i, j;
 	long double g;
 	char tipo;
@@ -416,7 +398,7 @@ void montarSistemaDC(std::vector<Elemento>& netlist, std::vector< std::vector<lo
 }
 
 void mostrarSistema(std::string msg, std::vector<std::vector<long double>> Yn, int num_variaveis){
-  /* Opcional: Mostra o sistema resolvido */
+	// Function that prints the system
 	std::cout << msg << std::endl;
 
   for (int i=1; i<=num_variaveis; i++) {
@@ -455,21 +437,6 @@ void adicionarEstampasComponentesVariantes(std::vector<std::vector<long double>>
 			sistema[componente.x][index]        += -G*V;
 		}
 		else if (tipo == 'L'){
-			/*long double G = 2*componente.valor/passo;
-			long double I = solucao_anterior[componente.x] + passo/(2*componente.valor)*(solucao_anterior[componente.a] - solucao_anterior[componente.b]);  
-
-			sistema[componente.a][componente.a] += G;
-			sistema[componente.a][componente.b] -= G;
-			sistema[componente.b][componente.a] -= G;
-			sistema[componente.b][componente.b] += G;
-			sistema[componente.a][index] -= I;
-			sistema[componente.b][index] += I;
-
-			sistema[componente.x][componente.a] += G;
-			sistema[componente.x][componente.b] -= G;
-			sistema[componente.x][componente.x] -= 1;
-			sistema[componente.x][index] -= I;*/
-
 			sistema[componente.a][componente.x] += 1;
 			sistema[componente.b][componente.x] -= 1;
 
@@ -551,7 +518,6 @@ int simulacaoTrapezios(
 		unsigned passos_por_ponto,
 		std::vector<std::vector<long double>>& solucoes,
 		std::vector<Elemento>& componentesNaoLineares){
-	//	std::vector<Elemento>& amp_ops){
 	// montar sistema dc
 	// a cada iteracao:
 	//   adiciona estampas dos componentes variantes no tempo
@@ -567,7 +533,6 @@ int simulacaoTrapezios(
 	montarSistemaDC(netlist, sistemaEsqueleto, num_variaveis);
 	vector<vector<long double>> sistemaCompleto(num_variaveis+1, vector<long double>(num_variaveis+2));
 
-	//vector<vector<long double>> solucoes;
 	#ifdef DEBUG
 		cout << "Calculando ponto de operacao" << endl;
 		cin.get();
@@ -621,6 +586,9 @@ std::vector<long double> resolverNewtonRaphson(std::vector<std::vector<long doub
 	convergiu = false;
 
 	srand(time(0));
+	//newton-raphson iterative method for linearization of functions
+	//  for diodes and switches, if the voltage across them is 0
+	//  the last solution will be kept
 	
 	do{
 		for(unsigned iter = 0; iter < MAX_ITER; iter++){
@@ -835,126 +803,12 @@ std::vector<long double> resolverPontoOperacao(std::vector<std::vector<long doub
 				exit(ERRO_CONVERGENCIA_NEWTON_RAPHSON);
 			}
 		}
-	/*resolverSistema(Yn, num_variaveis);
-	vector<long double> solucao(num_variaveis+1);
-	for (int i=0; i<num_variaveis+1; i++)
-		solucao[i] = Yn[i][num_variaveis+1];*/
 	return solucao;
 }
 
-/*void condensarLinhas(std::vector<std::vector<long double>>& sistema, std::vector<std::vector<int>> linhas){
-	std::vector<int> linhas_para_remover;
-	for (unsigned index=0; index < linhas.size(); index++){
-		int	linha_destino = linhas[index][0];
-		for (unsigned i=1; i < linhas[index].size(); i++){
-			int linha_atual = linhas[index][i];
-			for (unsigned j=0; j < sistema[linha_destino].size(); j++)
-				sistema[linha_destino][j] += sistema[linha_atual][j]; 				
-			linhas_para_remover.push_back(linha_atual);
-		}	
-	}
-	
-	std::sort(linhas_para_remover.begin(), linhas_para_remover.end());
-
-	for(int index=linhas_para_remover.size()-1; index >= 0; index--){
-		sistema.erase(sistema.begin()+linhas_para_remover[index]);
-	}
-}
-
-std::vector<std::vector<std::string>> condensarColunas(std::vector<std::vector<long double>>& sistema, std::vector<std::vector<int>> colunas, std::vector<std::string> lista){
-	std::vector<std::vector<std::string>> mapaVariaveis(lista.size());
-	for (unsigned index=0; index < lista.size(); index++){
-		mapaVariaveis[index].push_back(lista[index]);
-	}
-
-	std::vector<int> colunas_para_remover;
-	for (unsigned index=0; index < colunas.size(); index++){
-		int coluna_destino = colunas[index][0];
-		for (unsigned i=1; i < colunas[index].size(); i++){
-			int coluna_atual = colunas[index][i];
-			for (unsigned j=0; j<sistema.size(); j++){
-				sistema[j][coluna_destino] += sistema[j][coluna_atual];
-				colunas_para_remover.push_back(coluna_atual);
-				mapaVariaveis[coluna_destino].push_back(mapaVariaveis[coluna_atual][0]);
-			}
-		}	
-	}
-	
-	std::sort(colunas_para_remover.begin(), colunas_para_remover.end());
-	
-	for(unsigned index=colunas_para_remover.size()-1; index > 0; index--){
-		for(unsigned linha=0; linha < sistema.size(); linha++){
-			sistema[linha].erase(sistema[linha].begin()+colunas_para_remover[index]);
-		}
-		mapaVariaveis.erase(mapaVariaveis.begin()+index);
-	}
-	return mapaVariaveis;
-}
-
-int adicionarLista(std::vector<std::vector<int>>& lista, int a, int b){
-	//Se a lista esta vazia, adiciona os elementos recebidos numa nova sublista
-	if (lista.size() == 0){
-		std::vector<int> novo(2);
-		novo[0] = a;
-		novo[1] = b;
-		lista.push_back(novo);
-		return OK;
-	}
-
-	//Procura em cada sublista se um elemento esta, e adiciona o outro caso ainda nao esteja nela
-	for(unsigned index = 0; index < lista.size(); index++){
-		auto i = std::find(lista[index].begin(), lista[index].end(), a);
-		if (i != lista[index].end()){
-			//Encontrou a na lista
-			auto j = std::find(lista[index].begin(), lista[index].end(), b);
-			if (j == lista[index].end()){
-				//Nao encontrou b na lista
-				lista[index].push_back(b);
-			}
-			return OK;
-		}
-
-		i = std::find(lista[index].begin(), lista[index].end(), b);
-		if (i != lista[index].end()){
-			//Encontrou b na lista
-			auto j = std::find(lista[index].begin(), lista[index].end(), a);
-			if (j == lista[index].end()){
-				//Nao encontrou a na lista
-				lista[index].push_back(a);
-			}
-			return OK;
-		}
-	}
-
-	//Se chegou aqui, nao encontrou nenhum dos elementos na lista, entao devemos adicionar uma nova sublista formada pelos dois elementos
-	std::vector<int> novo(2);
-	novo[0] = a;
-	novo[1] = b;
-	lista.push_back(novo);
-	return OK;
-}
-
-std::vector< std::vector<std::string> > condensarVariaveis(std::vector< std::vector<long double> >& sistema, std::vector<Elemento> amp_ops, std::vector<std::string> lista){
-	std::vector< std::vector<int> > colunas;
-	std::vector< std::vector<int> > linhas;
-	
-	using namespace std;
-
-	for (unsigned index=0; index < amp_ops.size(); index++){
-		adicionarLista(colunas, amp_ops[index].c, amp_ops[index].d);
-		adicionarLista(linhas, amp_ops[index].a, amp_ops[index].b);
-	}
-
-
-	condensarLinhas(sistema, linhas);
-	std::vector< std::vector<std::string> > mapaVariaveis = condensarColunas(sistema, colunas, lista);
-
-	return mapaVariaveis; // colunas contem o mapa de variaveis necessario para o resultado final
-}*/
-
-
 std::string converterExtensao(std::string nomeArquivo, std::string extensao);
 std::string converterExtensao(std::string nomeArquivo, std::string extensao){
+	//Auxiliary function that substitutes the input file extension with the specified new extension. If there is no extension, the new one is appended to the input filename
 	std::istringstream ss(nomeArquivo);
 	std::string palavra;
 	std::string nomeArquivoSaida = "";
@@ -985,7 +839,7 @@ void escreverResultadosNoArquivo(
 /*
  * Funcao que grava os resultados em um arquivo com nome igual ao netlist. 
  * Ex: netlist: circuit.net
- *		 arquivo: circuit.res
+ *		 arquivo: circuit.tab
  */
 	using std::string;
 	using std::vector;
@@ -993,15 +847,13 @@ void escreverResultadosNoArquivo(
 	using std::endl;
 
 	std::ofstream arquivoSaida;
-	string nomeArquivoSaida = converterExtensao(nomeArquivo,"res");
-	//std::string nomeArquivoSaida = nomeArquivo + ".res";
+	string nomeArquivoSaida = converterExtensao(nomeArquivo,"tab");
 	cout << "Iniciando a escrita no arquivo: " << nomeArquivoSaida << endl;
 
 	arquivoSaida.open(nomeArquivoSaida);
 	arquivoSaida << "t ";
 	for(auto &variavel: lista){
 		arquivoSaida << variavel;
-		//if (variavel != lista[lista.size()-1])
 			arquivoSaida << " ";
 	}
 	arquivoSaida << "\n";
@@ -1020,9 +872,7 @@ void escreverResultadosNoArquivo(
 		int ii = 0;
 		for(unsigned index_solucao = 0; index_solucao < lista.size(); index_solucao++){
 			arquivoSaida << solucao[index_solucao];
-			//std::cout << lista[ii] << ": "<< solucao[index_solucao] << std::endl;
 			ii++;
-			//if (val != solucao[solucao.size()-1])
 				arquivoSaida << " ";
 		}
 		arquivoSaida << "\n";
