@@ -1,1 +1,1 @@
-# Trabalho de Circuitos Elétricos II - Camyla Romão e Paulo Valente
+# Trabalho de Circuitos Elétricos II - Alice Fontes, Camyla Romão e Paulo Valente
